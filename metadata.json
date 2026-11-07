@@ -1,0 +1,6 @@
+{
+  "name": "Mumbai Zaika POS & Cloud Kitchen CRM",
+  "description": "Serverless Cloud Kitchen Management, 80mm Thermal POS Billing, Swiggy/Zomato Smart Order Parser, Expense & P&L Analytics, and Google Apps Script Suite for Mumbai Zaika, Lucknow.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

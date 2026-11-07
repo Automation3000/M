@@ -1,0 +1,2720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Mumbai Zaika — Cloud Kitchen POS & CRM</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome 6 CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'DM Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+    h1, h2, h3, .font-display { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .font-mono, .tabular-nums { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body class="bg-stone-50 text-stone-900 min-h-screen flex flex-col antialiased">
+
+  <!-- TOAST NOTIFICATION: Desktop Right Corner, Mobile Center Bottom -->
+  <div id="app-toast" class="fixed z-50 transition-all duration-300 opacity-0 pointer-events-none transform sm:top-5 sm:right-5 sm:bottom-auto sm:left-auto sm:translate-x-0 bottom-20 left-1/2 -translate-x-1/2">
+    <div class="px-4 py-2.5 rounded-xl shadow-xl text-xs font-semibold flex items-center gap-2 bg-stone-900 text-white border border-stone-700">
+      <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400"></i>
+      <span id="toast-msg">Action completed</span>
+    </div>
+  </div>
+
+  <!-- TOP NAVIGATION BAR -->
+  <header class="bg-white border-b border-stone-200 px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-4 sticky top-0 z-30 shadow-2xs">
+    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+      <button type="button" onclick="switchTab('expenses')" class="text-base sm:text-lg font-extrabold tracking-tight text-stone-900 whitespace-nowrap shrink-0 font-display bg-transparent border-0 cursor-pointer p-0 text-left">
+        Mumbai Zaika
+      </button>
+      <span class="hidden md:inline-block px-2 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-800 rounded">Lucknow</span>
+    </div>
+
+    <!-- Desktop Navigation: Expenses -> Billing -> Order History -> Camera -> Admin & Users -> Settings -->
+    <nav class="hidden sm:flex items-center gap-1 sm:gap-2 text-xs sm:text-sm font-medium text-stone-600 overflow-x-auto py-1 scrollbar-none" style="-webkit-overflow-scrolling: touch;">
+      <button type="button" onclick="switchTab('expenses')" id="nav-expenses" class="px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 transition-all font-semibold bg-amber-100/80 text-amber-900 border border-amber-300 cursor-pointer shadow-xs">
+        <i class="fa-solid fa-receipt mr-1.5 text-amber-700"></i>Expenses
+      </button>
+      <button type="button" onclick="switchTab('pos')" id="nav-pos" class="px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 hover:text-stone-900 hover:bg-stone-100 transition-all cursor-pointer text-stone-600">
+        <i class="fa-solid fa-cash-register mr-1.5"></i>Billing
+      </button>
+      <button type="button" onclick="switchTab('orders')" id="nav-orders" class="px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 hover:text-stone-900 hover:bg-stone-100 transition-all cursor-pointer text-stone-600">
+        <i class="fa-solid fa-clock-rotate-left mr-1.5"></i>Order History
+      </button>
+      <button type="button" onclick="switchTab('cctv')" id="nav-cctv" class="px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 hover:text-stone-900 hover:bg-stone-100 transition-all cursor-pointer text-stone-600">
+        <i class="fa-solid fa-video mr-1.5"></i>Camera
+      </button>
+      <button type="button" onclick="switchTab('admin')" id="nav-admin" class="px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 hover:text-stone-900 hover:bg-stone-100 transition-all cursor-pointer text-stone-600">
+        <i class="fa-solid fa-users-gear mr-1.5"></i>Admin & Users
+      </button>
+      <button type="button" onclick="switchTab('settings')" id="nav-settings" class="px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 hover:text-stone-900 hover:bg-stone-100 transition-all cursor-pointer text-stone-600">
+        <i class="fa-solid fa-sliders mr-1.5"></i>Settings
+      </button>
+    </nav>
+
+    <!-- Staff Role & Terminal Lock Badge (Click opens Profile & Logout modal) -->
+    <div class="flex items-center gap-2 shrink-0">
+      <button type="button" onclick="openUserProfileModal()" id="current-user-btn" class="px-2.5 sm:px-3 py-1.5 text-xs font-medium bg-stone-900 text-white rounded-lg hover:bg-stone-800 whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1.5 shadow-xs">
+        <i class="fa-solid fa-user-shield text-amber-400"></i>
+        <span id="current-user-label" class="hidden sm:inline">Admin</span>
+        <span id="current-user-label-mobile" class="sm:hidden font-medium">Admin</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN VIEWPORT -->
+  <main class="flex-1 max-w-[1440px] w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 pb-24 sm:pb-6">
+
+    <!-- DEDICATED TERMINAL LOCK SCREEN (Visible when terminal is Locked / Guest) -->
+    <section id="terminal-locked-screen" class="max-w-md mx-auto my-10 bg-white border border-stone-200 rounded-3xl p-6 sm:p-8 text-center space-y-5 shadow-xl">
+      <div class="w-16 h-16 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+        <i class="fa-solid fa-lock text-3xl"></i>
+      </div>
+      <div>
+        <h2 class="text-xl sm:text-2xl font-black text-stone-900 font-display">Terminal Locked</h2>
+        <p class="text-xs text-stone-600 mt-1.5 leading-relaxed">
+          Please enter assigned staff PIN code to unlock counter terminal and load authorized menu modules.
+        </p>
+      </div>
+      <div class="space-y-3 pt-2">
+        <input id="terminal-pin-input" type="password" maxlength="6" placeholder="Enter Staff PIN" onkeydown="if(event.key==='Enter') handleInlineTerminalUnlock()" class="w-full px-4 py-3 text-center text-2xl font-mono tracking-widest border-2 border-stone-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500 bg-stone-50" />
+        <button type="button" onclick="handleInlineTerminalUnlock()" class="w-full py-3.5 px-4 bg-stone-900 hover:bg-stone-800 text-white text-sm font-bold rounded-2xl transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md">
+          <i class="fa-solid fa-key text-amber-400"></i>
+          <span>Unlock Terminal</span>
+        </button>
+      </div>
+      <p class="text-[11px] text-stone-400 pt-1">
+        Security Note: On page refresh and logout, terminal automatically locks with zero module permissions.
+      </p>
+    </section>
+
+    <!-- MODULE 1: EXPENSES MANAGER (TAB 1 IN SHEET) -->
+    <section id="tab-expenses" class="hidden space-y-6">
+      <!-- P&L Admin Section (Strictly visible only to Admin with PnL permission) -->
+      <div id="pnl-admin-section" class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h1 class="text-lg sm:text-xl font-bold text-stone-900 font-display">Kitchen Expenses & Profit/Loss Overview</h1>
+          <span class="text-xs font-mono font-medium text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+            <i class="fa-solid fa-shield-halved text-[10px] mr-1"></i>Admin Financials
+          </span>
+        </div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" id="pnl-cards"></div>
+      </div>
+
+      <!-- Lock Banner when user is not Admin -->
+      <div id="pnl-lock-banner" class="hidden bg-white border border-stone-200 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+        <div class="flex items-start gap-3">
+          <div class="w-9 h-9 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
+            <i class="fa-solid fa-lock text-sm"></i>
+          </div>
+          <div>
+            <h2 class="text-sm font-bold text-stone-900">Profit & Loss Overview Restricted</h2>
+            <p class="text-xs text-stone-500 mt-0.5">Total Sales, Expenses, and Net Profit/Loss figures are strictly visible to Admin accounts.</p>
+          </div>
+        </div>
+        <button type="button" onclick="openPinModal()" class="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold rounded-lg whitespace-nowrap self-start sm:self-auto cursor-pointer transition-colors shadow-xs">
+          <i class="fa-solid fa-key text-amber-400 mr-1.5"></i>Unlock as Admin with PIN
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <!-- Daily Expense Logger Form (App-like Simple & Easy Interface) -->
+        <div class="lg:col-span-5 bg-white border border-stone-200 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs">
+          <div class="flex items-center justify-between border-b border-stone-100 pb-2.5">
+            <div>
+              <h2 class="text-sm font-bold text-stone-900">Log Daily Kitchen Expense</h2>
+              <p class="text-[11px] text-stone-500">Quick touch voucher logger · Google Sheet Tab 1</p>
+            </div>
+            <span class="px-2 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-800 rounded">Sheet Tab 1</span>
+          </div>
+
+          <!-- Touch-friendly Large Amount Display & Quick Presets -->
+          <div class="bg-amber-50/70 border-2 border-amber-200 rounded-2xl p-3 sm:p-4 text-center transition-all">
+            <span class="text-[11px] font-bold text-stone-600 uppercase tracking-wider block mb-1">Expense Amount</span>
+            <div class="flex items-center justify-center gap-1 my-1">
+              <span class="text-2xl font-bold text-amber-800">₹</span>
+              <input id="exp-amt" type="number" min="1" step="any" placeholder="0" onkeydown="if(event.key==='Enter') handleAddExpense(event)" class="w-44 text-center text-3xl font-mono font-extrabold text-stone-900 bg-transparent border-0 focus:outline-none" />
+            </div>
+            <!-- Quick preset chips: Tap to add amount -->
+            <div class="flex flex-wrap items-center justify-center gap-1.5 pt-2 border-t border-amber-200/60 text-xs">
+              <button type="button" onclick="addExpenseAmount(50)" class="px-2.5 py-1 font-semibold rounded-lg bg-white border border-amber-300 text-stone-800 hover:bg-amber-100 cursor-pointer shadow-2xs">+₹50</button>
+              <button type="button" onclick="addExpenseAmount(100)" class="px-2.5 py-1 font-semibold rounded-lg bg-white border border-amber-300 text-stone-800 hover:bg-amber-100 cursor-pointer shadow-2xs">+₹100</button>
+              <button type="button" onclick="addExpenseAmount(200)" class="px-2.5 py-1 font-semibold rounded-lg bg-white border border-amber-300 text-stone-800 hover:bg-amber-100 cursor-pointer shadow-2xs">+₹200</button>
+              <button type="button" onclick="addExpenseAmount(500)" class="px-2.5 py-1 font-semibold rounded-lg bg-white border border-amber-300 text-stone-800 hover:bg-amber-100 cursor-pointer shadow-2xs">+₹500</button>
+              <button type="button" onclick="addExpenseAmount(1000)" class="px-2.5 py-1 font-semibold rounded-lg bg-white border border-amber-300 text-stone-800 hover:bg-amber-100 cursor-pointer shadow-2xs">+₹1000</button>
+              <button type="button" onclick="clearExpenseAmount()" class="px-2 py-1 font-semibold rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200 cursor-pointer">Clear</button>
+            </div>
+          </div>
+
+          <!-- Item Name -->
+          <div>
+            <label class="block text-xs font-semibold text-stone-700 mb-1">Expense Item Name *</label>
+            <input id="exp-name" required placeholder="e.g. 8kg Fresh Mutton / 19kg Indane LPG" onkeydown="if(event.key==='Enter') handleAddExpense(event)" class="w-full px-3.5 py-2.5 text-sm sm:text-xs border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 bg-stone-50" />
+          </div>
+
+          <!-- Selectable Category Chips (1-Tap Selection) -->
+          <div>
+            <label class="block text-xs font-semibold text-stone-700 mb-1.5">Category</label>
+            <input type="hidden" id="exp-cat" value="Raw Material" />
+            <div class="grid grid-cols-3 gap-1.5" id="exp-cat-pills">
+              <button type="button" onclick="selectExpenseCategory('Raw Material')" class="exp-cat-btn py-1.5 px-2 text-[11px] font-semibold rounded-lg border bg-stone-900 text-white border-stone-900 cursor-pointer transition-all text-center truncate">
+                🥩 Raw Material
+              </button>
+              <button type="button" onclick="selectExpenseCategory('Packaging')" class="exp-cat-btn py-1.5 px-2 text-[11px] font-semibold rounded-lg border bg-white text-stone-700 border-stone-200 hover:bg-stone-50 cursor-pointer transition-all text-center truncate">
+                📦 Packaging
+              </button>
+              <button type="button" onclick="selectExpenseCategory('Gas/Fuel')" class="exp-cat-btn py-1.5 px-2 text-[11px] font-semibold rounded-lg border bg-white text-stone-700 border-stone-200 hover:bg-stone-50 cursor-pointer transition-all text-center truncate">
+                🔥 Gas/Fuel
+              </button>
+              <button type="button" onclick="selectExpenseCategory('Staff')" class="exp-cat-btn py-1.5 px-2 text-[11px] font-semibold rounded-lg border bg-white text-stone-700 border-stone-200 hover:bg-stone-50 cursor-pointer transition-all text-center truncate">
+                👨‍🍳 Staff Wages
+              </button>
+              <button type="button" onclick="selectExpenseCategory('Grocery')" class="exp-cat-btn py-1.5 px-2 text-[11px] font-semibold rounded-lg border bg-white text-stone-700 border-stone-200 hover:bg-stone-50 cursor-pointer transition-all text-center truncate">
+                🧂 Spices/Ghee
+              </button>
+              <button type="button" onclick="selectExpenseCategory('Misc')" class="exp-cat-btn py-1.5 px-2 text-[11px] font-semibold rounded-lg border bg-white text-stone-700 border-stone-200 hover:bg-stone-50 cursor-pointer transition-all text-center truncate">
+                ⚙️ Misc/Repair
+              </button>
+            </div>
+          </div>
+
+          <!-- Payment Mode & Vendor/Notes -->
+          <div class="grid grid-cols-2 gap-2.5">
+            <div>
+              <label class="block text-xs font-semibold text-stone-700 mb-1">Payment Mode</label>
+              <input type="hidden" id="exp-mode" value="Cash" />
+              <div class="grid grid-cols-2 gap-1.5">
+                <button type="button" onclick="selectExpensePaymentMode('Cash')" id="exp-mode-cash" class="py-2 text-xs font-semibold rounded-lg border bg-stone-900 text-white border-stone-900 cursor-pointer transition-all text-center">
+                  Cash
+                </button>
+                <button type="button" onclick="selectExpensePaymentMode('UPI')" id="exp-mode-upi" class="py-2 text-xs font-semibold rounded-lg border bg-white text-stone-700 border-stone-200 hover:bg-stone-50 cursor-pointer transition-all text-center">
+                  UPI
+                </button>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-stone-700 mb-1">Vendor / Market Notes</label>
+              <input id="exp-notes" placeholder="e.g. Saadatganj Market" onkeydown="if(event.key==='Enter') handleAddExpense(event)" class="w-full px-3 py-2 text-sm sm:text-xs border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 bg-stone-50" />
+            </div>
+          </div>
+
+          <button type="button" onclick="handleAddExpense(event)" class="w-full py-3 px-4 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl cursor-pointer transition-colors shadow-xs flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-plus-circle text-sm"></i>Save Expense Voucher to Sheet Tab 1
+          </button>
+        </div>
+
+        <!-- Real-time Expenses Ledger (Compact Card Type View by Default) -->
+        <div class="lg:col-span-7 bg-white border border-stone-200 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-xs">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-3">
+            <div>
+              <h2 class="text-sm sm:text-base font-bold text-stone-900">Expenses Voucher Records</h2>
+              <p class="text-xs text-stone-500" id="expenses-count-label">Compact ledger synced with Google Sheet Tab 1</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <input id="exp-search" oninput="renderExpensesAndPnl()" placeholder="Search item, category, staff..." class="px-3 py-1.5 text-xs bg-stone-50 border border-stone-300 rounded-lg w-full sm:w-48 focus:outline-none focus:ring-1 focus:ring-stone-900" />
+              <button type="button" onclick="refreshFromSheet()" class="p-1.5 px-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg text-xs font-semibold whitespace-nowrap cursor-pointer">
+                <i class="fa-solid fa-arrows-rotate"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Compact Cards Container -->
+          <div id="expenses-cards-container" class="space-y-2.5 max-h-[620px] overflow-y-auto pr-1"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MODULE 2: POS BILLING & 80MM PRINTER -->
+    <section id="tab-pos" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div class="lg:col-span-7 space-y-4">
+        <!-- Order Channel Mode Selector (Simplified Large Touch Buttons) -->
+        <div class="bg-white border border-stone-200 rounded-xl p-4 space-y-3 shadow-xs">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-stone-700 uppercase tracking-wider">Select Order Channel</span>
+            <span id="active-mode-badge" class="text-xs font-mono font-medium text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+              Pickup Mode (1-Click Fast Bill)
+            </span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <button type="button" onclick="setOrderMode('Pickup / Takeaway')" data-mode="Pickup / Takeaway" class="mode-btn py-3 px-3 text-xs font-bold rounded-xl border bg-stone-900 text-white border-stone-900 whitespace-nowrap cursor-pointer transition-all shadow-xs text-center flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-bag-shopping text-sm text-amber-400"></i>
+              <span>Pickup</span>
+            </button>
+            <button type="button" onclick="setOrderMode('Direct Delivery')" data-mode="Direct Delivery" class="mode-btn py-3 px-3 text-xs font-bold rounded-xl border bg-white text-stone-700 border-stone-200 hover:bg-stone-50 whitespace-nowrap cursor-pointer transition-all text-center flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-motorcycle text-sm text-emerald-600"></i>
+              <span>Delivery</span>
+            </button>
+            <button type="button" onclick="setOrderMode('Swiggy')" data-mode="Swiggy" class="mode-btn py-3 px-3 text-xs font-bold rounded-xl border bg-white text-stone-700 border-stone-200 hover:bg-stone-50 whitespace-nowrap cursor-pointer transition-all text-center flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-bolt text-sm text-orange-500"></i>
+              <span>Swiggy</span>
+            </button>
+            <button type="button" onclick="setOrderMode('Zomato')" data-mode="Zomato" class="mode-btn py-3 px-3 text-xs font-bold rounded-xl border bg-white text-stone-700 border-stone-200 hover:bg-stone-50 whitespace-nowrap cursor-pointer transition-all text-center flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-utensils text-sm text-red-500"></i>
+              <span>Zomato</span>
+            </button>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+            <input id="cust-name" type="text" oninput="recalculateCart()" placeholder="Customer Name (Optional for Pickup)" class="px-3 py-2 text-xs bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900" />
+            <input id="cust-phone" type="text" oninput="recalculateCart()" placeholder="WhatsApp / Phone (Optional)" class="px-3 py-2 text-xs font-mono bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900" />
+            <input id="cust-ref" type="text" oninput="recalculateCart()" placeholder="Delivery Address / Portal ID" class="px-3 py-2 text-xs font-mono bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900" />
+          </div>
+        </div>
+
+        <!-- Collapsible Swiggy / Zomato Smart Paste Parser (Keeps Billing Screen Clean) -->
+        <div class="bg-white border border-stone-200 rounded-xl p-3.5 shadow-xs">
+          <div class="flex items-center justify-between">
+            <button type="button" onclick="toggleSmartPaste()" class="flex items-center gap-2 text-xs font-bold text-stone-800 hover:text-stone-950 cursor-pointer">
+              <i class="fa-solid fa-wand-magic-sparkles text-amber-600"></i>
+              <span>Swiggy / Zomato Smart Order Parser</span>
+              <span class="text-[10px] text-stone-400 font-normal">(Click to paste text)</span>
+            </button>
+            <div class="flex gap-1.5" id="smart-paste-samples" style="display: none;">
+              <button type="button" onclick="loadSamplePortalText('swiggy')" class="px-2 py-0.5 text-[11px] font-medium bg-orange-50 hover:bg-orange-100 text-orange-800 border border-orange-200 rounded whitespace-nowrap cursor-pointer">
+                Sample Swiggy
+              </button>
+              <button type="button" onclick="loadSamplePortalText('zomato')" class="px-2 py-0.5 text-[11px] font-medium bg-red-50 hover:bg-red-100 text-red-800 border border-red-200 rounded whitespace-nowrap cursor-pointer">
+                Sample Zomato
+              </button>
+            </div>
+          </div>
+          <div id="smart-paste-drawer" class="hidden mt-3 space-y-2.5 pt-2 border-t border-stone-100">
+            <textarea id="smart-paste-input" rows="3" placeholder="Paste raw Swiggy / Zomato portal order text here to extract dishes & pricing..." class="w-full p-2.5 text-xs font-mono bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900"></textarea>
+            <div class="flex justify-end">
+              <button type="button" onclick="runSmartPasteParser()" class="px-4 py-2 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-lg cursor-pointer transition-colors shadow-xs">
+                <i class="fa-solid fa-cart-plus mr-1.5"></i>Auto-Fill POS Cart
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Menu Grid -->
+        <div class="bg-white border border-stone-200 rounded-xl p-4 space-y-4 shadow-xs">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-3">
+            <div class="flex flex-wrap gap-1.5" id="category-tabs"></div>
+            <div class="relative">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-stone-400"></i>
+              <input id="menu-search" oninput="renderMenuGrid()" type="search" placeholder="Search menu..." class="pl-8 pr-3 py-1.5 text-xs bg-stone-50 border border-stone-300 rounded-lg sm:w-56 focus:outline-none focus:ring-1 focus:ring-stone-900" />
+            </div>
+          </div>
+          <div id="menu-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3"></div>
+        </div>
+      </div>
+
+      <!-- Right Column: Cart & Thermal Receipt Preview -->
+      <div class="lg:col-span-5 space-y-5">
+        <!-- Active Cart -->
+        <div class="bg-white border border-stone-200 rounded-xl p-5 space-y-4 shadow-xs">
+          <div class="flex items-center justify-between border-b border-stone-200 pb-3">
+            <div>
+              <h2 class="text-base font-bold text-stone-900">Active POS Bill Cart</h2>
+              <p class="text-xs text-stone-500 font-mono" id="active-invoice-label">Next Invoice: MZ-8402</p>
+            </div>
+            <button type="button" onclick="clearCart()" class="text-xs text-stone-500 hover:text-red-600 underline cursor-pointer">
+              Clear Cart
+            </button>
+          </div>
+
+          <div id="cart-items-list" class="max-h-60 overflow-y-auto space-y-2 pr-1 divide-y divide-stone-100"></div>
+
+          <div class="grid grid-cols-3 gap-2 pt-2 border-t border-stone-200">
+            <div>
+              <label class="text-[11px] text-stone-500 block">Packaging (₹)</label>
+              <input id="cart-packaging" oninput="recalculateCart()" type="number" min="0" value="20" class="w-full mt-1 px-2.5 py-1.5 text-xs font-mono border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900" />
+            </div>
+            <div>
+              <label class="text-[11px] text-stone-500 block">Discount (₹)</label>
+              <input id="cart-discount" oninput="recalculateCart()" type="number" min="0" value="0" class="w-full mt-1 px-2.5 py-1.5 text-xs font-mono border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900" />
+            </div>
+            <div>
+              <label class="text-[11px] text-stone-500 block">Payment Mode</label>
+              <select id="cart-payment" onchange="recalculateCart()" class="w-full mt-1 px-2.5 py-1.5 text-xs border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900">
+                <option value="UPI">UPI</option>
+                <option value="Cash">Cash</option>
+                <option value="Online Portal">Portal</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="space-y-1.5 text-xs border-t border-stone-200 pt-3">
+            <div class="flex justify-between text-stone-600"><span>Subtotal:</span><span id="sum-subtotal">₹0.00</span></div>
+            <div class="flex justify-between text-stone-600"><span>GST / Tax:</span><span id="sum-tax">₹0.00</span></div>
+            <div class="flex justify-between text-stone-600"><span>Packaging:</span><span id="sum-pack">₹20.00</span></div>
+            <div class="flex justify-between text-emerald-700 font-semibold"><span>Discount:</span><span id="sum-disc">-₹0.00</span></div>
+            <div class="flex justify-between text-sm font-bold text-stone-900 border-t border-stone-300 pt-1.5 mt-1">
+              <span>GRAND TOTAL:</span><span id="sum-grand">₹0.00</span>
+            </div>
+          </div>
+
+          <!-- POS Printer Roll Size Selector (Normal Entry Dropdown, Default 58mm) -->
+          <div class="flex items-center justify-between p-2.5 bg-stone-100 rounded-xl border border-stone-200 text-xs">
+            <label for="bill-size-select" class="font-semibold text-stone-700 flex items-center gap-1.5 shrink-0">
+              <i class="fa-solid fa-print text-stone-500"></i> Paper Size:
+            </label>
+            <select id="bill-size-select" onchange="setBillPaperSize(this.value)" class="px-2.5 py-1 text-xs font-semibold bg-white border border-stone-300 rounded-lg text-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 cursor-pointer shadow-2xs">
+              <option value="58mm" selected>58mm (2-Inch)</option>
+              <option value="80mm">80mm (3-Inch)</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5">
+            <button type="button" onclick="completeAndPrintOrder(false)" class="py-2.5 px-4 bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold rounded-lg cursor-pointer transition-colors shadow-xs">
+              <i class="fa-solid fa-floppy-disk mr-1.5"></i>Save Order
+            </button>
+            <button type="button" onclick="completeAndPrintOrder(true)" id="btn-save-print-label" class="py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg cursor-pointer transition-colors shadow-xs flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-print"></i><span>Save & Print Bill</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Thermal Bill Live Preview Container -->
+        <div class="bg-stone-200/70 border border-stone-300 rounded-xl p-4 shadow-xs">
+          <div class="flex items-center justify-between mb-3">
+            <span id="preview-bill-size-label" class="text-xs font-semibold text-stone-700">POS Thermal Receipt Preview (80mm)</span>
+            <button type="button" onclick="printReceipt()" class="px-3 py-1 bg-white border border-stone-300 rounded-md text-xs font-medium hover:bg-stone-50 cursor-pointer shadow-xs">
+              <i class="fa-solid fa-print mr-1"></i>Print Bill Now
+            </button>
+          </div>
+          <div id="thermal-receipt-wrapper" class="overflow-x-auto flex justify-center"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MODULE: ORDER HISTORY & DAY-END SETTLEMENT (SHEET TAB 2) -->
+    <section id="tab-orders" class="hidden space-y-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 class="text-lg sm:text-xl font-bold text-stone-900 font-display">Orders History & Day-End Profit Settlement</h1>
+          <p class="text-xs text-stone-500">Live order records from Google Sheet Tab 2 with daily profit & revenue analysis</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-1.5 bg-stone-100 p-1 rounded-xl border border-stone-200 text-xs">
+            <i class="fa-solid fa-calendar-days text-stone-500 ml-1.5"></i>
+            <select id="order-period-select" onchange="handleOrderPeriodChange(this.value)" class="px-2.5 py-1 text-xs font-semibold bg-white border border-stone-300 rounded-lg text-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 cursor-pointer shadow-2xs">
+              <option value="all">All Time (Sabhi Orders)</option>
+              <option value="today">Today (Aaj)</option>
+              <option value="yesterday">Yesterday (Kal)</option>
+              <option value="week">This Week (7 Days)</option>
+              <option value="month">This Month (30 Days)</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-1 bg-white border border-stone-300 rounded-xl px-2 py-1 shadow-2xs text-xs">
+            <span class="text-[11px] text-stone-500 font-medium">Date:</span>
+            <input type="date" id="order-custom-date" onchange="handleOrderCustomDate(this.value)" class="text-xs bg-transparent text-stone-800 font-mono focus:outline-none" />
+            <button type="button" id="order-clear-date-btn" onclick="clearOrderCustomDate()" class="hidden text-stone-400 hover:text-stone-700 text-xs px-1" title="Clear specific date">✕</button>
+          </div>
+          <button type="button" onclick="refreshFromSheet()" class="p-1.5 px-3 bg-white border border-stone-300 rounded-lg text-xs font-semibold hover:bg-stone-50 cursor-pointer shadow-2xs flex items-center gap-1">
+            <i class="fa-solid fa-arrows-rotate text-amber-600"></i>
+            <span>Sync</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Day-End Settlement Summary Metric Cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" id="order-settlement-cards"></div>
+
+      <!-- Channel & Payment Collection Breakup -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="order-breakdown-row"></div>
+
+      <!-- Settled Orders Card Ledger (Single smooth page scroll - No double scroll) -->
+      <div class="bg-white border border-stone-200 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-3">
+          <div class="flex items-center gap-2">
+            <h2 class="text-sm font-bold text-stone-900">Settled Customer Orders</h2>
+            <span id="order-count-badge" class="px-2 py-0.5 text-[10px] font-mono font-bold bg-stone-100 text-stone-700 rounded-full">0 Orders</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="order-channel-filter" onchange="renderOrderHistory()" class="px-2.5 py-1.5 text-xs bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900">
+              <option value="ALL">All Channels</option>
+              <option value="Pickup / Takeaway">Pickup / Takeaway</option>
+              <option value="Direct Delivery">Direct Delivery</option>
+              <option value="Swiggy">Swiggy</option>
+              <option value="Zomato">Zomato</option>
+            </select>
+            <input id="order-history-search" oninput="renderOrderHistory()" placeholder="Search invoice, customer, dishes..." class="px-3 py-1.5 text-xs bg-stone-50 border border-stone-300 rounded-lg w-full sm:w-56 focus:outline-none focus:ring-1 focus:ring-stone-900" />
+          </div>
+        </div>
+
+        <!-- Orders List without nested scroll container -->
+        <div id="order-history-cards-list" class="space-y-3"></div>
+      </div>
+    </section>
+
+    <!-- MODULE 3: LIVE CCTV HUB -->
+    <section id="tab-cctv" class="hidden space-y-5">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-xl font-bold text-stone-900 font-display">Shop Live Camera Feed (2x2 Grid)</h1>
+          <p class="text-xs text-stone-500">Wazirbagh Mohalla Kitchen & Pickup Counter Streams (Sheet Tab 6)</p>
+        </div>
+      </div>
+      <div id="cctv-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-5"></div>
+    </section>
+
+    <!-- MODULE 4: ADMIN & USERS (CONTACT INFO + STAFF USER CRUD) -->
+    <section id="tab-admin" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <!-- Contact Information Management -->
+        <div class="lg:col-span-5 bg-white border border-stone-200 rounded-xl p-5 space-y-3.5 shadow-xs">
+          <div class="border-b border-stone-100 pb-2">
+            <h2 class="text-sm font-bold text-stone-900">Restaurant & Contact Information</h2>
+            <p class="text-[11px] text-stone-500">Stored directly in Google Sheet Tab 4 (Admin & Profile)</p>
+          </div>
+
+          <div class="space-y-3 text-xs">
+            <div>
+              <label class="font-semibold text-stone-700 block mb-1">Restaurant Name</label>
+              <input id="set-name" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 bg-stone-50" />
+            </div>
+
+            <div>
+              <label class="font-semibold text-stone-700 block mb-1">Kitchen Tagline</label>
+              <input id="set-tagline" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 bg-stone-50" />
+            </div>
+
+            <div>
+              <label class="font-semibold text-stone-700 block mb-1">Kitchen Address</label>
+              <input id="set-address" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 bg-stone-50" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5">
+              <div>
+                <label class="font-semibold text-stone-700 block mb-1">Primary Calling Phone</label>
+                <input id="set-phone" class="w-full px-3 py-2 font-mono border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 bg-stone-50" />
+              </div>
+              <div>
+                <label class="font-semibold text-stone-700 block mb-1">FSSAI License No</label>
+                <input id="set-fssai" class="w-full px-3 py-2 font-mono border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 bg-stone-50" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5 pt-1 border-t border-stone-100">
+              <div>
+                <label class="font-semibold text-stone-700 block mb-1">Admin Owner Name</label>
+                <input id="set-admin-name" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 bg-stone-50" />
+              </div>
+              <div>
+                <label class="font-semibold text-stone-700 block mb-1">Terminal Unlock PIN</label>
+                <input id="set-admin-pin" type="text" maxlength="6" class="w-full px-3 py-2 font-mono font-bold text-amber-700 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 bg-stone-50" />
+              </div>
+            </div>
+          </div>
+
+          <button type="button" onclick="handleSaveAdminProfile(event)" class="w-full py-2.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold rounded-lg cursor-pointer transition-colors shadow-xs flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-floppy-disk"></i>Save Contact Information to Sheet Tab 4
+          </button>
+        </div>
+
+        <!-- Staff Users Management (CRUD with Add, Edit, Delete) -->
+        <div class="lg:col-span-7 bg-white border border-stone-200 rounded-xl p-5 space-y-3.5 shadow-xs">
+          <div class="flex items-center justify-between border-b border-stone-100 pb-2">
+            <div>
+              <h2 class="text-sm font-bold text-stone-900">Staff Accounts & Access Control</h2>
+              <p class="text-[11px] text-stone-500">Easily Add, Edit, or Delete staff members and PIN passwords</p>
+            </div>
+            <button type="button" onclick="openUserModal(null)" class="px-3 py-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-lg flex items-center gap-1.5 cursor-pointer shadow-xs">
+              <i class="fa-solid fa-user-plus"></i>Add Staff Member
+            </button>
+          </div>
+
+          <div id="users-admin-list" class="space-y-2.5"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MODULE 5: DEDICATED SETTINGS (TAB 5 IN SHEET) -->
+    <section id="tab-settings" class="hidden space-y-6">
+      <div class="bg-white border border-stone-200 rounded-xl p-5 space-y-4 shadow-xs max-w-3xl">
+        <div class="border-b border-stone-100 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-900 rounded">Google Sheet Tab 5</span>
+            <h1 class="text-base sm:text-lg font-bold text-stone-900 font-display">Kitchen & Thermal Receipt Settings</h1>
+          </div>
+          <p class="text-xs text-stone-500 mt-1">Configure your WhatsApp direct order QR code, bypass commission CTA, taxes, and packaging fees.</p>
+        </div>
+
+        <div class="space-y-4 text-xs">
+          <!-- WhatsApp QR Bypass Footer CTA -->
+          <div class="bg-amber-50/50 border border-amber-200/70 rounded-xl p-4 space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="font-bold text-stone-900 text-xs flex items-center gap-1.5">
+                <i class="fa-brands fa-whatsapp text-emerald-600 text-sm"></i>
+                Smart Bypass Footer CTA (Printed on 80mm Thermal Receipt below QR)
+              </label>
+              <span class="text-[10px] font-mono text-stone-500">Tab 5 Cell B2</span>
+            </div>
+            <textarea id="set-cta" rows="2" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 bg-white text-xs"></textarea>
+            <p class="text-[11px] text-stone-500">This call-to-action motivates Swiggy/Zomato customers to scan the QR and order directly next time.</p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label class="font-semibold text-stone-700 block mb-1">WhatsApp Business Number (with 91)</label>
+              <input id="set-wa" class="w-full px-3 py-2 font-mono border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 bg-stone-50" />
+            </div>
+            <div>
+              <label class="font-semibold text-stone-700 block mb-1">Direct Order Discount (%)</label>
+              <input id="set-discount" type="number" min="0" max="100" class="w-full px-3 py-2 font-mono border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 bg-stone-50" />
+            </div>
+          </div>
+
+          <div>
+            <label class="font-semibold text-stone-700 block mb-1">WhatsApp Pre-filled Order Message</label>
+            <input id="set-wa-msg" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 bg-stone-50" />
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label class="font-semibold text-stone-700 block mb-1">Standard Packaging Charge (₹)</label>
+              <input id="set-pack-fee" type="number" min="0" class="w-full px-3 py-2 font-mono border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 bg-stone-50" />
+            </div>
+            <div>
+              <label class="font-semibold text-stone-700 block mb-1">GST Tax Rate (%)</label>
+              <input id="set-gst-rate" type="number" min="0" max="28" class="w-full px-3 py-2 font-mono border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 bg-stone-50" />
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <button type="button" onclick="handleSaveDedicatedSettings(event)" class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg cursor-pointer transition-colors shadow-xs flex items-center gap-1.5">
+            <i class="fa-solid fa-floppy-disk"></i>Save Settings to Google Sheet Tab 5
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL 1: PIN LOGIN / ROLE SWITCH MODAL (NO DEFAULT PASSWORDS SHOWN) -->
+  <div id="pin-modal" class="fixed inset-0 bg-black/50 items-center justify-center z-50 p-4" style="display: none;">
+    <div class="bg-white border border-stone-200 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl animate-in fade-in duration-200">
+      <div class="flex justify-between items-center border-b border-stone-100 pb-2">
+        <h3 class="text-base font-bold text-stone-900 flex items-center gap-2">
+          <i class="fa-solid fa-shield-halved text-amber-600"></i>Terminal Staff Unlock
+        </h3>
+        <button type="button" onclick="closeAllModals()" class="text-stone-400 hover:text-stone-700 cursor-pointer bg-transparent border-0 p-1 text-sm">
+          ESC <i class="fa-solid fa-xmark ml-1"></i>
+        </button>
+      </div>
+      <p class="text-xs text-stone-600">Enter your assigned staff PIN password to unlock full privileges or switch counter role.</p>
+      <input id="pin-input" type="password" maxlength="6" placeholder="Enter PIN" class="w-full px-3 py-2.5 text-center text-xl font-mono tracking-widest border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-900 bg-stone-50" onkeydown="if(event.key==='Enter') verifyPinLogin();" />
+      <div class="grid grid-cols-2 gap-2">
+        <button type="button" onclick="closeAllModals()" class="py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold rounded-xl cursor-pointer transition-colors">
+          Cancel (ESC)
+        </button>
+        <button type="button" onclick="verifyPinLogin()" class="py-2.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold rounded-xl cursor-pointer transition-colors shadow-xs">
+          Unlock Terminal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: ADD / EDIT STAFF USER MODAL -->
+  <div id="user-modal" class="fixed inset-0 bg-black/50 items-center justify-center z-50 p-4" style="display: none;">
+    <div class="bg-white border border-stone-200 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-stone-100 pb-2">
+        <h3 class="text-base font-bold text-stone-900" id="user-modal-title">Staff Member</h3>
+        <button type="button" onclick="closeAllModals()" class="text-stone-400 hover:text-stone-700 cursor-pointer bg-transparent border-0 p-1 text-sm">
+          ESC <i class="fa-solid fa-xmark ml-1"></i>
+        </button>
+      </div>
+
+      <input type="hidden" id="user-edit-id" value="" />
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="font-semibold text-stone-700 block mb-1">Full Name *</label>
+          <input id="user-edit-name" placeholder="e.g. Staff Name" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 bg-stone-50" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="font-semibold text-stone-700 block mb-1">Role</label>
+            <select id="user-edit-role" onchange="handleUserRoleSelectChange()" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 bg-white">
+              <option value="Admin">Admin (Full Access)</option>
+              <option value="Cashier">Cashier (POS & Expense)</option>
+              <option value="Kitchen Staff">Kitchen Staff (Kitchen Only)</option>
+              <option value="CUSTOM">+ Custom Role (Type Name...)</option>
+            </select>
+            <input id="user-edit-custom-role" placeholder="Type custom role (e.g. Supervisor, Chef)" class="hidden mt-1.5 w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 bg-white font-medium" />
+          </div>
+          <div>
+            <label class="font-semibold text-stone-700 block mb-1">PIN Password (4-6 Digits) *</label>
+            <input id="user-edit-pin" type="text" maxlength="6" placeholder="e.g. 1111" class="w-full px-3 py-2 font-mono font-bold border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 bg-stone-50" />
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <label class="font-semibold text-stone-700 block mb-1.5">Menu Bar & Module Access Permissions</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 p-2 bg-stone-50 border border-stone-200 rounded-lg cursor-pointer">
+              <input type="checkbox" id="perm-pos" checked class="rounded text-amber-600" />
+              <span>Billing (POS)</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 bg-stone-50 border border-stone-200 rounded-lg cursor-pointer">
+              <input type="checkbox" id="perm-expenses" checked class="rounded text-amber-600" />
+              <span>Expenses Manager</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 bg-stone-50 border border-stone-200 rounded-lg cursor-pointer">
+              <input type="checkbox" id="perm-orders" checked class="rounded text-amber-600" />
+              <span>Order History</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 bg-stone-50 border border-stone-200 rounded-lg cursor-pointer">
+              <input type="checkbox" id="perm-cctv" checked class="rounded text-amber-600" />
+              <span>Camera Hub</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 bg-stone-50 border border-stone-200 rounded-lg cursor-pointer">
+              <input type="checkbox" id="perm-pnl" checked class="rounded text-amber-600" />
+              <span>P&L Financials</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 bg-stone-50 border border-stone-200 rounded-lg cursor-pointer">
+              <input type="checkbox" id="perm-admin" class="rounded text-amber-600" />
+              <span>Admin & Staff</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 bg-stone-50 border border-stone-200 rounded-lg cursor-pointer col-span-2">
+              <input type="checkbox" id="perm-settings" class="rounded text-amber-600" />
+              <span>Receipt & WhatsApp Settings</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2.5 pt-2">
+        <button type="button" onclick="closeAllModals()" class="py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold rounded-xl cursor-pointer transition-colors">
+          Cancel (ESC)
+        </button>
+        <button type="button" onclick="handleSaveUser()" class="py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl cursor-pointer transition-colors shadow-xs">
+          Save User Account
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: CONFIRM DELETE MODAL -->
+  <div id="delete-modal" class="fixed inset-0 bg-black/50 items-center justify-center z-50 p-4" style="display: none;">
+    <div class="bg-white border border-stone-200 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center gap-3 text-red-600">
+        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+          <i class="fa-solid fa-trash-can text-lg"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-stone-900">Confirm Delete</h3>
+          <p class="text-xs text-stone-500" id="delete-modal-msg">Are you sure you want to delete this record?</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2.5 pt-2">
+        <button type="button" onclick="closeAllModals()" class="py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold rounded-xl cursor-pointer transition-colors">
+          Cancel (ESC)
+        </button>
+        <button type="button" id="confirm-delete-btn" class="py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-xl cursor-pointer transition-colors shadow-xs">
+          Delete Permanently
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: USER PROFILE DETAILS & LOGOUT MODAL -->
+  <div id="user-profile-modal" class="fixed inset-0 bg-black/60 items-center justify-center z-50 p-4" style="display: none;">
+    <div class="bg-white border border-stone-200 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-stone-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div id="prof-avatar" class="w-9 h-9 rounded-full bg-stone-900 text-amber-400 flex items-center justify-center font-bold text-sm">
+            M
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-stone-900">User Profile Details</h3>
+            <p class="text-[11px] text-stone-500">Active Terminal Session</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeAllModals()" class="text-stone-400 hover:text-stone-700 cursor-pointer">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <div class="bg-stone-50 border border-stone-200 rounded-xl p-4 space-y-2.5 text-xs">
+        <div class="flex justify-between items-center">
+          <span class="text-stone-500 font-medium">Logged-in User</span>
+          <span id="prof-name" class="font-bold text-stone-900">Majeed (Admin)</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-stone-500 font-medium">Account Role</span>
+          <span id="prof-role" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-900">Admin</span>
+        </div>
+        <div class="pt-2 border-t border-stone-200/80 text-[11px] space-y-1">
+          <div class="text-stone-500 font-semibold mb-1">Module Access Permissions:</div>
+          <div class="grid grid-cols-2 gap-1.5 text-stone-700" id="prof-permissions-list"></div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2.5 pt-1">
+        <button type="button" onclick="closeAllModals(); openPinModal();" class="py-2.5 px-3 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-semibold rounded-xl transition-colors cursor-pointer text-center">
+          Switch User
+        </button>
+        <button type="button" onclick="logoutCurrentUser()" class="py-2.5 px-3 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer shadow-xs text-center flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          <span>Logout</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAVIGATION BAR FOR MOBILE (iOS & Android Style) -->
+  <nav id="mobile-bottom-nav" class="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-stone-200 px-1 py-1.5 flex justify-around items-center shadow-[0_-3px_12px_rgba(0,0,0,0.08)] select-none" style="padding-bottom: max(6px, env(safe-area-inset-bottom));">
+    <button type="button" onclick="switchTab('expenses')" id="mob-nav-expenses" class="flex flex-col items-center justify-center py-1 px-2 text-[10px] font-bold text-amber-700 transition-colors">
+      <i class="fa-solid fa-receipt text-base mb-0.5"></i>
+      <span>Expenses</span>
+    </button>
+    <button type="button" onclick="switchTab('pos')" id="mob-nav-pos" class="flex flex-col items-center justify-center py-1 px-2 text-[10px] font-medium text-stone-500 hover:text-stone-900 transition-colors">
+      <i class="fa-solid fa-cash-register text-base mb-0.5"></i>
+      <span>Billing</span>
+    </button>
+    <button type="button" onclick="switchTab('orders')" id="mob-nav-orders" class="flex flex-col items-center justify-center py-1 px-2 text-[10px] font-medium text-stone-500 hover:text-stone-900 transition-colors">
+      <i class="fa-solid fa-clock-rotate-left text-base mb-0.5"></i>
+      <span>History</span>
+    </button>
+    <button type="button" onclick="switchTab('cctv')" id="mob-nav-cctv" class="flex flex-col items-center justify-center py-1 px-2 text-[10px] font-medium text-stone-500 hover:text-stone-900 transition-colors">
+      <i class="fa-solid fa-video text-base mb-0.5"></i>
+      <span>Camera</span>
+    </button>
+    <button type="button" onclick="switchTab('admin')" id="mob-nav-admin" class="flex flex-col items-center justify-center py-1 px-2 text-[10px] font-medium text-stone-500 hover:text-stone-900 transition-colors">
+      <i class="fa-solid fa-users-gear text-base mb-0.5"></i>
+      <span>Admin</span>
+    </button>
+  </nav>
+
+  <script>
+    // -------------------------------------------------------------
+    // Application State
+    // -------------------------------------------------------------
+    var SPREADSHEET_ID = '1niu19tKMOQfIEMOhqGqgMA56BLL7Ig-ELHq59Mqlz2M';
+
+    var STATE = {
+      orderMode: 'Pickup / Takeaway',
+      activeCategory: 'All',
+      cart: [],
+      currentUser: (function() {
+        try {
+          var saved = localStorage.getItem('mz_active_user');
+          if (saved) {
+            var parsed = JSON.parse(saved);
+            if (parsed && parsed.id && parsed.id !== 'USR-LOCKED' && parsed.active) {
+              return parsed;
+            }
+          }
+        } catch(e) {}
+        return {
+          id: 'USR-LOCKED',
+          name: 'Terminal Locked (Guest)',
+          role: 'Guest',
+          pin: '',
+          active: false,
+          permissions: { pos: false, expenses: false, orders: false, pnl: false, cctv: false, admin: false, settings: false }
+        };
+      })(),
+      billPaperSize: (typeof localStorage !== 'undefined' && localStorage.getItem('mz_thermal_size')) || '58mm',
+      orderHistoryPeriod: 'all',
+      orderHistoryCustomDate: '',
+      settings: {
+        adminName: 'Majeed (Admin)',
+        adminPin: '1234',
+        restaurantName: 'Mumbai Zaika',
+        tagline: 'Authentic Lucknowi & Bambaiya Cloud Kitchen',
+        address: 'Wazirbagh Mohalla, Saadatganj, Lucknow - 226003',
+        phone: '+91 98765 43210',
+        fssaiNo: '30261105128038073',
+        gstRatePercent: 5,
+        defaultPackagingCharge: 20,
+        directDiscountPercent: 15,
+        whatsappNumber: '919876543210',
+        whatsappPrefillText: 'Hi Mumbai Zaika, I want to place a direct order!',
+        billFooterCTA: 'Scan to Order Directly on WhatsApp Next Time & Get 15% OFF! Bypass Swiggy/Zomato Commissions!'
+      },
+      menu: [
+        { id: 'M-101', name: 'Lucknowi Galouti Kebab (4 Pcs)', category: 'Kebabs', price: 240 },
+        { id: 'M-102', name: 'Charcoal Chicken Seekh Kebab', category: 'Kebabs', price: 210 },
+        { id: 'M-201', name: 'Wazirbagh Special Mutton Nihari', category: 'Stews', price: 320 },
+        { id: 'M-202', name: 'Mumbai Bhuna Chicken Khara Masala', category: 'Stews', price: 270 },
+        { id: 'M-301', name: 'Lucknowi Dum Chicken Biryani Bowl', category: 'Rice Bowls', price: 240 },
+        { id: 'M-401', name: 'Galouti Kebab + 2 Ulte Tawe Ka Paratha', category: 'Combos', price: 260 },
+        { id: 'M-402', name: 'Mutton Nihari + 2 Mughlai Sheermal', category: 'Combos', price: 360 },
+        { id: 'M-501', name: 'Crispy Chicken Shami Bun Kebab Burger', category: 'Burgers', price: 135 },
+        { id: 'M-502', name: 'Mumbai Schezwan Vada Pav Slider (2 Pcs)', category: 'Burgers', price: 110 },
+        { id: 'M-601', name: 'Crispy Chicken Lollipop Pakora (6 Pcs)', category: 'Pakoras', price: 190 },
+        { id: 'M-602', name: 'Mumbai Kanda Bhajiya Basket', category: 'Pakoras', price: 115 }
+      ],
+      orders: [],
+      expenses: [],
+      users: [
+        { id: 'USR-01', name: 'Majeed (Admin)', role: 'Admin', pin: '1234', permissions: { pos: true, expenses: true, orders: true, pnl: true, cctv: true, admin: true, settings: true }, active: true }
+      ],
+      cameras: [
+        { id: 'CAM-01', name: 'Main Tandoor & Galouti Station', zone: 'Kitchen Bay 1', online: true },
+        { id: 'CAM-02', name: 'Stew, Nihari & Biryani Line', zone: 'Kitchen Bay 2', online: true },
+        { id: 'CAM-03', name: 'Dispatch & 80mm Packing Desk', zone: 'Quality Check Desk', online: true },
+        { id: 'CAM-04', name: 'Walk-in & Rider Pickup Window', zone: 'Wazirbagh Entrance Counter', online: true }
+      ]
+    };
+
+    // -------------------------------------------------------------
+    // Toast Notification & Global ESC Key Listener
+    // -------------------------------------------------------------
+    function showToast(msg, isError) {
+      var toast = document.getElementById('app-toast');
+      var toastMsg = document.getElementById('toast-msg');
+      var toastIcon = document.getElementById('toast-icon');
+      if (!toast || !toastMsg) return;
+      toastMsg.textContent = msg;
+      if (toastIcon) {
+        toastIcon.className = isError ? 'fa-solid fa-circle-exclamation text-red-400' : 'fa-solid fa-circle-check text-emerald-400';
+      }
+      toast.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-2');
+      toast.classList.add('opacity-100', 'translate-y-0');
+      setTimeout(function() {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'pointer-events-none', '-translate-y-2');
+      }, 3000);
+    }
+    window.showToast = showToast;
+
+    // Requirement: ESC key closes modals, Enter key submits active modal
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' || e.keyCode === 27) {
+        closeAllModals();
+      } else if (e.key === 'Enter' || e.keyCode === 13) {
+        if (e.target && e.target.tagName === 'TEXTAREA') return;
+
+        var pinModal = document.getElementById('pin-modal');
+        var userModal = document.getElementById('user-modal');
+        var deleteModal = document.getElementById('delete-modal');
+
+        if (pinModal && pinModal.style.display === 'flex') {
+          e.preventDefault();
+          verifyPinLogin();
+        } else if (userModal && userModal.style.display === 'flex') {
+          e.preventDefault();
+          handleSaveUser();
+        } else if (deleteModal && deleteModal.style.display === 'flex') {
+          e.preventDefault();
+          var confirmBtn = document.getElementById('confirm-delete-btn');
+          if (confirmBtn) confirmBtn.click();
+        }
+      }
+    });
+
+    function closeAllModals() {
+      var m1 = document.getElementById('pin-modal'); if (m1) m1.style.display = 'none';
+      var m2 = document.getElementById('user-modal'); if (m2) m2.style.display = 'none';
+      var m3 = document.getElementById('delete-modal'); if (m3) m3.style.display = 'none';
+      var m4 = document.getElementById('user-profile-modal'); if (m4) m4.style.display = 'none';
+    }
+    window.closeAllModals = closeAllModals;
+
+    function openUserProfileModal() {
+      var modal = document.getElementById('user-profile-modal');
+      var nameEl = document.getElementById('prof-name');
+      var roleEl = document.getElementById('prof-role');
+      var avatarEl = document.getElementById('prof-avatar');
+      var permList = document.getElementById('prof-permissions-list');
+
+      var u = STATE.currentUser || { name: 'Terminal Locked', role: 'Staff/Guest' };
+      if (nameEl) nameEl.textContent = u.name;
+      if (roleEl) {
+        roleEl.textContent = u.role;
+        roleEl.className = (u.role === 'Admin')
+          ? 'px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-900'
+          : 'px-2 py-0.5 rounded text-[11px] font-semibold bg-stone-200 text-stone-700';
+      }
+      if (avatarEl) avatarEl.textContent = (u.name || 'U').charAt(0).toUpperCase();
+
+      if (permList) {
+        var isAdmin = (u.role === 'Admin');
+        var perms = u.permissions || {};
+        var permHtml =
+          '<div class="flex items-center gap-1">' + (perms.pos !== false ? '<i class="fa-solid fa-check text-emerald-600 text-[10px]"></i><span>Billing (POS)</span>' : '<i class="fa-solid fa-lock text-stone-400 text-[10px]"></i><span class="text-stone-400">Billing</span>') + '</div>' +
+          '<div class="flex items-center gap-1">' + (perms.expenses !== false ? '<i class="fa-solid fa-check text-emerald-600 text-[10px]"></i><span>Expenses</span>' : '<i class="fa-solid fa-lock text-stone-400 text-[10px]"></i><span class="text-stone-400">Expenses</span>') + '</div>' +
+          '<div class="flex items-center gap-1">' + (perms.orders !== false ? '<i class="fa-solid fa-check text-emerald-600 text-[10px]"></i><span>Order History</span>' : '<i class="fa-solid fa-lock text-stone-400 text-[10px]"></i><span class="text-stone-400">Order History</span>') + '</div>' +
+          '<div class="flex items-center gap-1">' + (perms.cctv !== false ? '<i class="fa-solid fa-check text-emerald-600 text-[10px]"></i><span>Camera Hub</span>' : '<i class="fa-solid fa-lock text-stone-400 text-[10px]"></i><span class="text-stone-400">Camera Hub</span>') + '</div>' +
+          '<div class="flex items-center gap-1">' + (isAdmin && perms.pnl ? '<i class="fa-solid fa-check text-emerald-600 text-[10px]"></i><span class="text-stone-900 font-medium">P&L Figures</span>' : '<i class="fa-solid fa-lock text-stone-400 text-[10px]"></i><span class="text-stone-400">P&L (Admin)</span>') + '</div>' +
+          '<div class="flex items-center gap-1">' + (isAdmin ? '<i class="fa-solid fa-check text-emerald-600 text-[10px]"></i><span class="text-stone-900 font-medium">Admin & Settings</span>' : '<i class="fa-solid fa-lock text-stone-400 text-[10px]"></i><span class="text-stone-400">Admin (Restricted)</span>') + '</div>';
+        permList.innerHTML = permHtml;
+      }
+
+      if (modal) modal.style.display = 'flex';
+    }
+    window.openUserProfileModal = openUserProfileModal;
+
+    function logoutCurrentUser() {
+      STATE.currentUser = {
+        id: 'USR-LOCKED',
+        name: 'Terminal Locked (Guest)',
+        role: 'Guest',
+        pin: '',
+        active: false,
+        permissions: { pos: false, expenses: false, orders: false, pnl: false, cctv: false, admin: false, settings: false }
+      };
+      try {
+        localStorage.removeItem('mz_active_user');
+      } catch(e) {}
+      closeAllModals();
+      applyNavigationPermissions();
+      updateCurrentUserUI();
+      var tabs = ['expenses', 'pos', 'orders', 'cctv', 'admin', 'settings'];
+      for (var i = 0; i < tabs.length; i++) {
+        var el = document.getElementById('tab-' + tabs[i]);
+        if (el) el.classList.add('hidden');
+      }
+      var lockScreen = document.getElementById('terminal-locked-screen');
+      if (lockScreen) {
+        lockScreen.classList.remove('hidden');
+        var pinIn = document.getElementById('terminal-pin-input');
+        if (pinIn) { pinIn.value = ''; setTimeout(function() { pinIn.focus(); }, 100); }
+      }
+      showToast('Logged out. Terminal locked & zero permissions allowed.', false);
+    }
+    window.logoutCurrentUser = logoutCurrentUser;
+
+    function updateCurrentUserUI() {
+      var label = document.getElementById('current-user-label');
+      var labelMobile = document.getElementById('current-user-label-mobile');
+      var isLocked = (STATE.currentUser.id === 'USR-LOCKED' || !STATE.currentUser.active);
+
+      if (label) {
+        if (isLocked) {
+          label.textContent = '🔒 Terminal Locked';
+        } else {
+          var cleanFullName = (STATE.currentUser.name || 'Admin').split('(')[0].trim();
+          label.textContent = cleanFullName + ' (' + STATE.currentUser.role + ')';
+        }
+      }
+      if (labelMobile) {
+        if (isLocked) {
+          labelMobile.textContent = '🔒 Locked';
+        } else {
+          var shortFirstName = (STATE.currentUser.name || 'User').split('(')[0].trim().split(' ')[0];
+          labelMobile.textContent = shortFirstName + ' (' + (STATE.currentUser.role || 'Staff') + ')';
+        }
+      }
+    }
+    window.updateCurrentUserUI = updateCurrentUserUI;
+
+    // Requirement: Link User Permissions directly to Menu Bar
+    function applyNavigationPermissions() {
+      var isLocked = (STATE.currentUser.id === 'USR-LOCKED' || !STATE.currentUser.active);
+      var lockScreen = document.getElementById('terminal-locked-screen');
+      if (lockScreen) {
+        lockScreen.classList.toggle('hidden', !isLocked);
+      }
+
+      var perms = STATE.currentUser.permissions || {};
+      var isAdmin = (STATE.currentUser.role === 'Admin');
+
+      var tabPerms = {
+        'expenses': !isLocked && perms.expenses !== false,
+        'pos': !isLocked && perms.pos !== false,
+        'orders': !isLocked && perms.orders !== false,
+        'cctv': !isLocked && perms.cctv !== false,
+        'admin': !isLocked && Boolean(perms.admin || isAdmin),
+        'settings': !isLocked && Boolean((perms.admin || isAdmin) && perms.settings !== false)
+      };
+
+      for (var t in tabPerms) {
+        var allowed = tabPerms[t];
+        var dEl = document.getElementById('nav-' + t);
+        if (dEl) dEl.style.display = allowed ? '' : 'none';
+        var mEl = document.getElementById('mob-nav-' + t);
+        if (mEl) mEl.style.display = allowed ? 'flex' : 'none';
+      }
+    }
+    window.applyNavigationPermissions = applyNavigationPermissions;
+
+    function performPinLogin(pin) {
+      var cleanPin = String(pin || '').trim();
+      if (!cleanPin) {
+        showToast('Please enter staff PIN', true);
+        return false;
+      }
+      var found = null;
+      for (var i = 0; i < STATE.users.length; i++) {
+        if (String(STATE.users[i].pin).trim() === cleanPin) {
+          found = STATE.users[i];
+          break;
+        }
+      }
+      if (found) {
+        STATE.currentUser = found;
+        try {
+          localStorage.setItem('mz_active_user', JSON.stringify(found));
+        } catch(e) {}
+        closeAllModals();
+        var lockScreen = document.getElementById('terminal-locked-screen');
+        if (lockScreen) lockScreen.classList.add('hidden');
+        var pinIn = document.getElementById('terminal-pin-input');
+        if (pinIn) pinIn.value = '';
+        applyNavigationPermissions();
+        updateCurrentUserUI();
+        showToast('Terminal unlocked: ' + found.name + ' (' + found.role + ')', false);
+
+        var p = found.permissions || {};
+        if (p.expenses !== false) switchTab('expenses');
+        else if (p.pos !== false) switchTab('pos');
+        else if (p.orders !== false) switchTab('orders');
+        else if (p.cctv !== false) switchTab('cctv');
+        else if (p.admin) switchTab('admin');
+        else switchTab('expenses');
+        return true;
+      } else {
+        showToast('Incorrect Staff PIN. Please try again.', true);
+        var pinIn2 = document.getElementById('terminal-pin-input');
+        if (pinIn2) { pinIn2.value = ''; pinIn2.focus(); }
+        var modalPin = document.getElementById('pin-input');
+        if (modalPin) { modalPin.value = ''; modalPin.focus(); }
+        return false;
+      }
+    }
+    window.performPinLogin = performPinLogin;
+
+    function handleInlineTerminalUnlock() {
+      var input = document.getElementById('terminal-pin-input');
+      var pin = input ? input.value.trim() : '';
+      performPinLogin(pin);
+    }
+    window.handleInlineTerminalUnlock = handleInlineTerminalUnlock;
+
+    // Thermal Printer Paper Size (Default 58mm / 2-Inch)
+    function setBillPaperSize(size) {
+      STATE.billPaperSize = size || '58mm';
+      try {
+        localStorage.setItem('mz_thermal_size', STATE.billPaperSize);
+      } catch(e) {}
+      updateBillSizeUI();
+      recalculateCart();
+      showToast('Printer set to ' + (STATE.billPaperSize === '58mm' ? '58mm (2-Inch)' : '80mm (3-Inch)'), false);
+    }
+    window.setBillPaperSize = setBillPaperSize;
+
+    function updateBillSizeUI() {
+      var size = STATE.billPaperSize || '58mm';
+      var selectEl = document.getElementById('bill-size-select');
+      if (selectEl) {
+        selectEl.value = size;
+      }
+      var previewLabel = document.getElementById('preview-bill-size-label');
+      if (previewLabel) {
+        previewLabel.textContent = 'POS Thermal Receipt Preview (' + (size === '58mm' ? '58mm / 2-Inch' : '80mm / 3-Inch') + ')';
+      }
+    }
+    window.updateBillSizeUI = updateBillSizeUI;
+
+    // Order History Period Dropdown & Date Picker Handlers
+    function handleOrderPeriodChange(val) {
+      STATE.orderHistoryPeriod = val || 'all';
+      STATE.orderHistoryCustomDate = '';
+      var dateIn = document.getElementById('order-custom-date');
+      if (dateIn) dateIn.value = '';
+      var clearBtn = document.getElementById('order-clear-date-btn');
+      if (clearBtn) clearBtn.classList.add('hidden');
+      renderOrderHistory();
+    }
+    window.handleOrderPeriodChange = handleOrderPeriodChange;
+
+    function handleOrderCustomDate(val) {
+      STATE.orderHistoryCustomDate = val || '';
+      var clearBtn = document.getElementById('order-clear-date-btn');
+      if (clearBtn) {
+        clearBtn.classList.toggle('hidden', !val);
+      }
+      renderOrderHistory();
+    }
+    window.handleOrderCustomDate = handleOrderCustomDate;
+
+    function clearOrderCustomDate() {
+      STATE.orderHistoryCustomDate = '';
+      var dateIn = document.getElementById('order-custom-date');
+      if (dateIn) dateIn.value = '';
+      var clearBtn = document.getElementById('order-clear-date-btn');
+      if (clearBtn) clearBtn.classList.add('hidden');
+      renderOrderHistory();
+    }
+    window.clearOrderCustomDate = clearOrderCustomDate;
+
+    function toggleSmartPaste() {
+      var drawer = document.getElementById('smart-paste-drawer');
+      var samples = document.getElementById('smart-paste-samples');
+      if (drawer) {
+        drawer.classList.toggle('hidden');
+        if (samples) samples.style.display = drawer.classList.contains('hidden') ? 'none' : 'flex';
+      }
+    }
+    window.toggleSmartPaste = toggleSmartPaste;
+
+    // -------------------------------------------------------------
+    // Navigation & Tab Switcher (Desktop + Mobile Bottom Navigation)
+    // -------------------------------------------------------------
+    function switchTab(tab) {
+      var isLocked = (STATE.currentUser.id === 'USR-LOCKED' || !STATE.currentUser.active);
+      if (isLocked) {
+        applyNavigationPermissions();
+        return;
+      }
+      var lockScreen = document.getElementById('terminal-locked-screen');
+      if (lockScreen) lockScreen.classList.add('hidden');
+
+      var perms = STATE.currentUser.permissions || {};
+      var isAdmin = (STATE.currentUser.role === 'Admin');
+
+      if ((tab === 'admin' || tab === 'settings') && !perms.admin && !isAdmin) {
+        showToast('Admin PIN required to access ' + (tab === 'admin' ? 'Admin & Users' : 'Settings'), true);
+        openPinModal();
+        return;
+      }
+      if (tab === 'pos' && perms.pos === false) { showToast('POS Billing access restricted.', true); return; }
+      if (tab === 'expenses' && perms.expenses === false) { showToast('Expenses access restricted.', true); return; }
+      if (tab === 'orders' && perms.orders === false) { showToast('Orders access restricted.', true); return; }
+
+      var tabs = ['expenses', 'pos', 'orders', 'cctv', 'admin', 'settings'];
+      for (var i = 0; i < tabs.length; i++) {
+        var t = tabs[i];
+        var el = document.getElementById('tab-' + t);
+        if (el) el.classList.toggle('hidden', t !== tab);
+
+        // Desktop nav styling
+        var navBtn = document.getElementById('nav-' + t);
+        if (navBtn) {
+          if (t === tab) {
+            navBtn.className = 'px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 transition-all font-semibold bg-amber-100/80 text-amber-900 border border-amber-300 cursor-pointer shadow-xs';
+          } else {
+            navBtn.className = 'px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-all cursor-pointer';
+          }
+        }
+
+        // Mobile bottom nav styling
+        var mobBtn = document.getElementById('mob-nav-' + t);
+        if (mobBtn) {
+          if (t === tab) {
+            mobBtn.className = 'flex flex-col items-center justify-center py-1 px-2 text-[10px] font-bold text-amber-700 transition-colors';
+          } else {
+            mobBtn.className = 'flex flex-col items-center justify-center py-1 px-2 text-[10px] font-medium text-stone-500 hover:text-stone-900 transition-colors';
+          }
+        }
+      }
+      if (tab === 'orders') {
+        renderOrderHistory();
+      }
+      renderAll();
+    }
+    window.switchTab = switchTab;
+
+    // -------------------------------------------------------------
+    // Module 1: App-like Expense Logger Helpers & Compact Card Ledger
+    // -------------------------------------------------------------
+    function addExpenseAmount(delta) {
+      var inEl = document.getElementById('exp-amt');
+      if (inEl) {
+        var cur = Number(inEl.value) || 0;
+        inEl.value = cur + delta;
+        inEl.focus();
+      }
+    }
+    window.addExpenseAmount = addExpenseAmount;
+
+    function clearExpenseAmount() {
+      var inEl = document.getElementById('exp-amt');
+      if (inEl) {
+        inEl.value = '';
+        inEl.focus();
+      }
+    }
+    window.clearExpenseAmount = clearExpenseAmount;
+
+    function selectExpenseCategory(cat) {
+      var inEl = document.getElementById('exp-cat');
+      if (inEl) inEl.value = cat;
+      var buttons = document.querySelectorAll('.exp-cat-btn');
+      for (var i = 0; i < buttons.length; i++) {
+        var btn = buttons[i];
+        var isSelected = btn.textContent.indexOf(cat) !== -1;
+        btn.className = 'exp-cat-btn py-1.5 px-2 text-[11px] font-semibold rounded-lg border cursor-pointer transition-all text-center truncate ' +
+          (isSelected ? 'bg-stone-900 text-white border-stone-900 shadow-2xs' : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-50');
+      }
+    }
+    window.selectExpenseCategory = selectExpenseCategory;
+
+    function selectExpensePaymentMode(mode) {
+      var inEl = document.getElementById('exp-mode');
+      if (inEl) inEl.value = mode;
+      var cashBtn = document.getElementById('exp-mode-cash');
+      var upiBtn = document.getElementById('exp-mode-upi');
+      if (cashBtn && upiBtn) {
+        cashBtn.className = 'py-2 text-xs font-semibold rounded-lg border cursor-pointer transition-all text-center ' +
+          (mode === 'Cash' ? 'bg-stone-900 text-white border-stone-900' : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-50');
+        upiBtn.className = 'py-2 text-xs font-semibold rounded-lg border cursor-pointer transition-all text-center ' +
+          (mode === 'UPI' ? 'bg-stone-900 text-white border-stone-900' : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-50');
+      }
+    }
+    window.selectExpensePaymentMode = selectExpensePaymentMode;
+
+    function handleAddExpense(ev) {
+      if (ev && ev.preventDefault) ev.preventDefault();
+      var expNameEl = document.getElementById('exp-name');
+      var expCatEl = document.getElementById('exp-cat');
+      var expAmtEl = document.getElementById('exp-amt');
+      var expModeEl = document.getElementById('exp-mode');
+      var expNotesEl = document.getElementById('exp-notes');
+
+      var name = expNameEl ? expNameEl.value.trim() : '';
+      var amt = expAmtEl ? Number(expAmtEl.value) : 0;
+
+      if (!name) {
+        showToast('Please enter an Expense Item Name.', true);
+        if (expNameEl) expNameEl.focus();
+        return false;
+      }
+      if (isNaN(amt) || amt <= 0) {
+        showToast('Please enter an expense Amount (₹).', true);
+        if (expAmtEl) expAmtEl.focus();
+        return false;
+      }
+
+      var newExp = {
+        id: 'EXP-' + Math.floor(1000 + Math.random() * 9000),
+        timestamp: new Date().toISOString(),
+        itemName: name,
+        category: (expCatEl && expCatEl.value) ? expCatEl.value : 'Raw Material',
+        amount: amt,
+        paymentMode: (expModeEl && expModeEl.value) ? expModeEl.value : 'Cash',
+        notes: (expNotesEl && expNotesEl.value.trim()) ? expNotesEl.value.trim() : '',
+        loggedBy: (STATE.currentUser && STATE.currentUser.name && STATE.currentUser.active) ? STATE.currentUser.name : 'Majeed (Admin)'
+      };
+
+      STATE.expenses.unshift(newExp);
+      if (expNameEl) expNameEl.value = '';
+      if (expAmtEl) expAmtEl.value = '';
+      if (expNotesEl) expNotesEl.value = '';
+      renderExpensesAndPnl();
+      showToast('Saving voucher ' + newExp.id + ' to Google Sheet...', false);
+
+      if (typeof google !== 'undefined' && google && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            if (res && res.error) {
+              showToast('Google Sheet Error: ' + res.error, true);
+            } else {
+              showToast('Voucher ' + newExp.id + ' saved to Sheet Tab 1!', false);
+            }
+          })
+          .withFailureHandler(function(err) {
+            console.error('GAS saveExpense error:', err);
+            showToast('Sheet sync failed: ' + (err.message || err), true);
+          })
+          .saveExpense(newExp);
+      } else {
+        saveExpenseExternal(newExp);
+      }
+      return false;
+    }
+    window.handleAddExpense = handleAddExpense;
+
+    function saveExpenseExternal(exp) {
+      if (STATE.settings && STATE.settings.gasWebAppUrl && STATE.settings.gasWebAppUrl.indexOf('http') === 0 && STATE.settings.gasWebAppUrl.indexOf('AKfycbz_MUMBAI_ZAIKA') === -1) {
+        try {
+          var url = STATE.settings.gasWebAppUrl + (STATE.settings.gasWebAppUrl.indexOf('?') === -1 ? '?' : '&') + 'action=saveExpense&data=' + encodeURIComponent(JSON.stringify(exp));
+          var img = new Image();
+          img.src = url;
+          showToast('Voucher ' + exp.id + ' synced via Web App URL!', false);
+        } catch(e) {
+          showToast('Voucher ' + exp.id + ' recorded locally', false);
+        }
+      } else {
+        showToast('Voucher ' + exp.id + ' recorded locally!', false);
+      }
+    }
+    window.saveExpenseExternal = saveExpenseExternal;
+
+    function confirmDeleteExpense(expenseId) {
+      if (!STATE.currentUser.permissions.admin) {
+        showToast('Only Admin can delete expense entries.', true);
+        return;
+      }
+      var targetExp = null;
+      for (var i = 0; i < STATE.expenses.length; i++) {
+        if (STATE.expenses[i].id === expenseId) { targetExp = STATE.expenses[i]; break; }
+      }
+      var modal = document.getElementById('delete-modal');
+      var msg = document.getElementById('delete-modal-msg');
+      var confirmBtn = document.getElementById('confirm-delete-btn');
+      if (msg) msg.textContent = 'Delete expense voucher ' + expenseId + ' (' + (targetExp ? targetExp.itemName + ' - ₹' + targetExp.amount : '') + ')?';
+      if (confirmBtn) {
+        confirmBtn.onclick = function() {
+          performDeleteExpense(expenseId);
+        };
+      }
+      if (modal) modal.style.display = 'flex';
+    }
+    window.confirmDeleteExpense = confirmDeleteExpense;
+
+    function performDeleteExpense(expenseId) {
+      STATE.expenses = STATE.expenses.filter(function(e) { return e.id !== expenseId; });
+      renderExpensesAndPnl();
+      closeAllModals();
+      showToast('Deleting expense ' + expenseId + ' from Sheet Tab 1...', false);
+      if (typeof google !== 'undefined' && google && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            if (res && res.error) {
+              showToast('Delete error: ' + res.error, true);
+            } else {
+              showToast('Expense ' + expenseId + ' deleted from Sheet Tab 1', false);
+            }
+          })
+          .withFailureHandler(function(err) {
+            showToast('Delete failed: ' + (err.message || err), true);
+          })
+          .deleteExpense(expenseId);
+      }
+    }
+
+    function renderExpensesAndPnl() {
+      var isPnlAdmin = Boolean(STATE.currentUser && STATE.currentUser.role === 'Admin' && STATE.currentUser.permissions && STATE.currentUser.permissions.pnl);
+      var pnlSection = document.getElementById('pnl-admin-section');
+      if (pnlSection) pnlSection.classList.toggle('hidden', !isPnlAdmin);
+      var pnlLockBanner = document.getElementById('pnl-lock-banner');
+      if (pnlLockBanner) pnlLockBanner.classList.toggle('hidden', isPnlAdmin);
+
+      var totalSales = 0;
+      for (var i = 0; i < STATE.orders.length; i++) totalSales += Number(STATE.orders[i].grandTotal || 0);
+      var totalExp = 0;
+      for (var j = 0; j < STATE.expenses.length; j++) totalExp += Number(STATE.expenses[j].amount || 0);
+      var net = totalSales - totalExp;
+
+      var pnlCards = document.getElementById('pnl-cards');
+      if (pnlCards) {
+        pnlCards.innerHTML =
+          '<div class="bg-white border border-stone-200 rounded-xl p-3.5 sm:p-4 shadow-xs"><div class="text-[11px] sm:text-xs text-stone-500 font-medium">Total Sales</div><div class="text-lg sm:text-xl font-bold font-mono text-stone-900 mt-1">₹' + totalSales.toLocaleString('en-IN') + '</div></div>' +
+          '<div class="bg-white border border-stone-200 rounded-xl p-3.5 sm:p-4 shadow-xs"><div class="text-[11px] sm:text-xs text-stone-500 font-medium">Kitchen Expenses (Tab 1)</div><div class="text-lg sm:text-xl font-bold font-mono text-stone-900 mt-1">₹' + totalExp.toLocaleString('en-IN') + '</div></div>' +
+          '<div class="bg-white border border-stone-200 rounded-xl p-3.5 sm:p-4 shadow-xs"><div class="text-[11px] sm:text-xs text-stone-500 font-medium">Net Profit / Loss</div><div class="text-lg sm:text-xl font-bold font-mono mt-1 ' + (net >= 0 ? 'text-emerald-700' : 'text-red-600') + '">₹' + net.toLocaleString('en-IN') + '</div></div>' +
+          '<div class="bg-white border border-stone-200 rounded-xl p-3.5 sm:p-4 shadow-xs"><div class="text-[11px] sm:text-xs text-stone-500 font-medium">Total Orders Logged</div><div class="text-lg sm:text-xl font-bold font-mono text-stone-900 mt-1">' + STATE.orders.length + '</div></div>';
+      }
+
+      // Compact Cards View
+      var searchEl = document.getElementById('exp-search');
+      var q = (searchEl ? searchEl.value.trim().toLowerCase() : '');
+      var container = document.getElementById('expenses-cards-container');
+      var countLabel = document.getElementById('expenses-count-label');
+
+      var filtered = STATE.expenses.filter(function(e) {
+        if (!q) return true;
+        return (e.itemName || '').toLowerCase().indexOf(q) !== -1 ||
+               (e.category || '').toLowerCase().indexOf(q) !== -1 ||
+               (e.loggedBy || '').toLowerCase().indexOf(q) !== -1 ||
+               (e.id || '').toLowerCase().indexOf(q) !== -1 ||
+               (e.notes || '').toLowerCase().indexOf(q) !== -1;
+      });
+
+      if (countLabel) {
+        countLabel.textContent = filtered.length + ' vouchers recorded · Tab 1 synced';
+      }
+
+      if (container) {
+        if (filtered.length === 0) {
+          container.innerHTML = '<div class="py-10 text-center text-xs text-stone-400 border border-dashed border-stone-200 rounded-xl">No expense vouchers found.</div>';
+        } else {
+          var html = '';
+          for (var k = 0; k < filtered.length; k++) {
+            var e = filtered[k];
+            var catColors = {
+              'Raw Material': 'bg-emerald-50 text-emerald-800 border-emerald-200',
+              'Packaging': 'bg-amber-50 text-amber-800 border-amber-200',
+              'Gas/Fuel': 'bg-blue-50 text-blue-800 border-blue-200',
+              'Staff': 'bg-purple-50 text-purple-800 border-purple-200',
+              'Grocery': 'bg-orange-50 text-orange-800 border-orange-200',
+              'Misc': 'bg-stone-100 text-stone-700 border-stone-200'
+            };
+            var colorClass = catColors[e.category] || 'bg-stone-100 text-stone-700 border-stone-200';
+            var timeStr = '';
+            try {
+              var d = new Date(e.timestamp);
+              timeStr = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) + ', ' + d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+            } catch(err) { timeStr = e.timestamp; }
+
+            html += '<div class="p-3.5 bg-stone-50/70 hover:bg-stone-50 border border-stone-200/90 rounded-xl flex items-center justify-between gap-3 transition-all shadow-2xs">' +
+              '<div class="min-w-0 flex-1">' +
+                '<div class="flex items-center gap-2 flex-wrap mb-1">' +
+                  '<span class="text-[10px] font-mono px-2 py-0.5 rounded border ' + colorClass + ' font-bold">' + e.category + '</span>' +
+                  '<span class="text-[10px] font-mono text-stone-400">' + e.id + '</span>' +
+                  '<span class="text-[10px] text-stone-400">' + timeStr + '</span>' +
+                '</div>' +
+                '<div class="text-xs sm:text-sm font-bold text-stone-900 truncate">' + e.itemName + '</div>' +
+                '<div class="flex items-center gap-2 text-[11px] text-stone-500 mt-0.5">' +
+                  '<span>By: <strong class="text-stone-700 font-medium">' + e.loggedBy + '</strong></span>' +
+                  (e.notes ? '<span>· ' + e.notes + '</span>' : '') +
+                '</div>' +
+              '</div>' +
+              '<div class="flex items-center gap-2.5 shrink-0">' +
+                '<div class="text-right">' +
+                  '<div class="text-sm sm:text-base font-bold font-mono text-stone-900">₹' + Number(e.amount).toLocaleString('en-IN') + '</div>' +
+                  '<span class="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-stone-200 text-stone-700">' + e.paymentMode + '</span>' +
+                '</div>' +
+                (STATE.currentUser.permissions.admin
+                  ? '<button type="button" onclick="confirmDeleteExpense(\'' + e.id + '\')" class="w-8 h-8 flex items-center justify-center text-stone-400 hover:text-red-600 rounded-lg hover:bg-red-50 cursor-pointer transition-colors" title="Delete Voucher"><i class="fa-solid fa-trash-can text-xs"></i></button>'
+                  : '') +
+              '</div>' +
+            '</div>';
+          }
+          container.innerHTML = html;
+        }
+      }
+    }
+    window.renderExpensesAndPnl = renderExpensesAndPnl;
+
+    // -------------------------------------------------------------
+    // Module 2: POS Billing & Isolated 80mm Print Engine (Zero Blank Pages)
+    // -------------------------------------------------------------
+    function setOrderMode(mode) {
+      STATE.orderMode = mode;
+      var buttons = document.querySelectorAll('.mode-btn');
+      for (var i = 0; i < buttons.length; i++) {
+        var btn = buttons[i];
+        var active = btn.getAttribute('data-mode') === mode;
+        btn.className = 'mode-btn py-2.5 px-3 text-xs font-semibold rounded-lg border whitespace-nowrap cursor-pointer transition-all ' +
+          (active ? 'bg-stone-900 text-white border-stone-900' : 'bg-white text-stone-700 border-stone-300');
+      }
+      recalculateCart();
+    }
+    window.setOrderMode = setOrderMode;
+
+    function renderCategories() {
+      var cats = ['All', 'Kebabs', 'Stews', 'Rice Bowls', 'Combos', 'Burgers', 'Pakoras'];
+      var container = document.getElementById('category-tabs');
+      if (!container) return;
+      var html = '';
+      for (var i = 0; i < cats.length; i++) {
+        var c = cats[i];
+        var active = STATE.activeCategory === c;
+        html += '<button type="button" onclick="selectCategory(\'' + c + '\')" class="px-2.5 py-1 text-xs font-medium rounded-md cursor-pointer transition-colors ' +
+          (active ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-600 hover:text-stone-900') + '">' + c + '</button>';
+      }
+      container.innerHTML = html;
+    }
+    window.renderCategories = renderCategories;
+
+    function selectCategory(c) {
+      STATE.activeCategory = c;
+      renderCategories();
+      renderMenuGrid();
+    }
+    window.selectCategory = selectCategory;
+
+    function renderMenuGrid() {
+      var searchEl = document.getElementById('menu-search');
+      var q = (searchEl ? searchEl.value : '').toLowerCase().trim();
+      var grid = document.getElementById('menu-grid');
+      if (!grid) return;
+      var html = '';
+      var matchedCount = 0;
+      for (var i = 0; i < STATE.menu.length; i++) {
+        var m = STATE.menu[i];
+        var matchesCat = (STATE.activeCategory === 'All' || m.category === STATE.activeCategory);
+        var matchesSearch = !q || m.name.toLowerCase().indexOf(q) !== -1;
+        if (matchesCat && matchesSearch) {
+          matchedCount++;
+          html += '<div onclick="addToCart(\'' + m.id + '\')" class="p-3 bg-stone-50 hover:bg-amber-50/70 border border-stone-200 hover:border-amber-300 rounded-lg cursor-pointer transition-all flex flex-col justify-between gap-2 select-none shadow-xs">' +
+            '<div><div class="text-xs font-bold text-stone-900">' + m.name + '</div>' +
+            '<div class="text-[11px] text-stone-500 mt-0.5">' + m.category + '</div></div>' +
+            '<div class="flex items-center justify-between pt-1 border-t border-stone-200/80">' +
+            '<span class="text-xs font-mono font-bold text-stone-900">₹' + m.price + '</span>' +
+            '<span class="text-[11px] font-semibold text-amber-700 bg-amber-100/70 px-2 py-0.5 rounded">+ Add</span></div></div>';
+        }
+      }
+      if (matchedCount === 0) {
+        html = '<div class="col-span-full py-8 text-center text-xs text-stone-400">No menu items found.</div>';
+      }
+      grid.innerHTML = html;
+    }
+    window.renderMenuGrid = renderMenuGrid;
+
+    function addToCart(menuId) {
+      var item = null;
+      for (var i = 0; i < STATE.menu.length; i++) {
+        if (STATE.menu[i].id === menuId) { item = STATE.menu[i]; break; }
+      }
+      if (!item) return;
+
+      var existing = null;
+      for (var j = 0; j < STATE.cart.length; j++) {
+        if (STATE.cart[j].menuItemId === menuId) { existing = STATE.cart[j]; break; }
+      }
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        STATE.cart.push({ menuItemId: item.id, name: item.name, price: item.price, qty: 1 });
+      }
+      recalculateCart();
+    }
+    window.addToCart = addToCart;
+
+    function changeQty(idx, delta) {
+      if (!STATE.cart[idx]) return;
+      STATE.cart[idx].qty += delta;
+      if (STATE.cart[idx].qty <= 0) STATE.cart.splice(idx, 1);
+      recalculateCart();
+    }
+    window.changeQty = changeQty;
+
+    function clearCart() {
+      STATE.cart = [];
+      recalculateCart();
+    }
+    window.clearCart = clearCart;
+
+    function recalculateCart() {
+      var list = document.getElementById('cart-items-list');
+      if (list) {
+        if (STATE.cart.length === 0) {
+          list.innerHTML = '<div class="text-xs text-stone-400 py-6 text-center border border-dashed border-stone-200 rounded-lg">Cart is empty.<br>Click any menu item or use Smart Paste Parser.</div>';
+        } else {
+          var html = '';
+          for (var i = 0; i < STATE.cart.length; i++) {
+            var c = STATE.cart[i];
+            html += '<div class="flex items-center justify-between gap-2 py-1.5 border-b border-stone-100 text-xs">' +
+              '<div class="min-w-0 flex-1"><div class="font-medium text-stone-900 truncate">' + c.name + '</div>' +
+              '<div class="text-[11px] font-mono text-stone-500">₹' + c.price + ' x ' + c.qty + ' = ₹' + (c.price * c.qty) + '</div></div>' +
+              '<div class="flex items-center gap-1 shrink-0">' +
+              '<button type="button" onclick="changeQty(' + i + ',-1)" class="w-6 h-6 rounded bg-stone-100 hover:bg-stone-200 font-mono font-bold cursor-pointer">-</button>' +
+              '<span class="w-5 text-center font-mono font-semibold">' + c.qty + '</span>' +
+              '<button type="button" onclick="changeQty(' + i + ',1)" class="w-6 h-6 rounded bg-stone-100 hover:bg-stone-200 font-mono font-bold cursor-pointer">+</button></div></div>';
+          }
+          list.innerHTML = html;
+        }
+      }
+
+      var subtotal = 0;
+      for (var k = 0; k < STATE.cart.length; k++) {
+        subtotal += (STATE.cart[k].price * STATE.cart[k].qty);
+      }
+
+      var packEl = document.getElementById('cart-packaging');
+      var pack = Number(packEl ? packEl.value : (STATE.settings.defaultPackagingCharge || 20)) || 0;
+
+      var discEl = document.getElementById('cart-discount');
+      var disc = Number(discEl ? discEl.value : 0) || 0;
+
+      var gstPercent = STATE.settings.gstRatePercent || 5;
+      var tax = Math.round(subtotal * (gstPercent / 100));
+      var grand = Math.max(0, subtotal + tax + pack - disc);
+
+      var elSub = document.getElementById('sum-subtotal'); if (elSub) elSub.textContent = '₹' + subtotal.toFixed(2);
+      var elTax = document.getElementById('sum-tax'); if (elTax) elTax.textContent = '₹' + tax.toFixed(2);
+      var elPack = document.getElementById('sum-pack'); if (elPack) elPack.textContent = '₹' + pack.toFixed(2);
+      var elDisc = document.getElementById('sum-disc'); if (elDisc) elDisc.textContent = '-₹' + disc.toFixed(2);
+      var elGrand = document.getElementById('sum-grand'); if (elGrand) elGrand.textContent = '₹' + grand.toFixed(2);
+
+      renderThermalReceipt(subtotal, tax, pack, disc, grand);
+    }
+    window.recalculateCart = recalculateCart;
+
+    function renderThermalReceipt(subtotal, tax, pack, disc, grand) {
+      var nextInv = 'MZ-' + (8401 + STATE.orders.length);
+      var invLabel = document.getElementById('active-invoice-label');
+      if (invLabel) invLabel.textContent = 'Next Invoice: ' + nextInv;
+
+      var custNameEl = document.getElementById('cust-name');
+      var custName = (custNameEl && custNameEl.value.trim()) ? custNameEl.value.trim() : 'Walk-in';
+
+      var custPhoneEl = document.getElementById('cust-phone');
+      var custPhone = (custPhoneEl && custPhoneEl.value.trim()) ? custPhoneEl.value.trim() : '';
+
+      var payModeEl = document.getElementById('cart-payment');
+      var payMode = (payModeEl && payModeEl.value) ? payModeEl.value : 'UPI';
+
+      var itemsHtml = '';
+      if (STATE.cart.length === 0) {
+        itemsHtml = '<div style="font-size:10px;text-align:center;padding:8px;color:#666;font-style:italic;">No items selected</div>';
+      } else {
+        for (var i = 0; i < STATE.cart.length; i++) {
+          var c = STATE.cart[i];
+          itemsHtml += '<div style="display:flex;justify-content:space-between;font-size:10.5px;padding:2px 0;">' +
+            '<div style="flex:1;padding-right:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + c.name + '</div>' +
+            '<div style="width:25px;text-align:center;">' + c.qty + '</div>' +
+            '<div style="width:40px;text-align:right;">₹' + c.price + '</div>' +
+            '<div style="width:45px;text-align:right;font-weight:bold;">₹' + (c.price * c.qty) + '</div></div>';
+        }
+      }
+
+      var wrapper = document.getElementById('thermal-receipt-wrapper');
+      if (!wrapper) return;
+
+      var rollSize = STATE.billPaperSize || '58mm';
+      var is58mm = (rollSize === '58mm');
+      var containerWidth = is58mm ? '48mm' : '72mm';
+      var baseFontSize = is58mm ? '9px' : '11px';
+      var lineHeight = is58mm ? '1.18' : '1.35';
+      var qrPixelSize = is58mm ? '96' : '116';
+
+      var waClean = (STATE.settings.whatsappNumber || '919876543210').replace(/[^0-9]/g, '');
+      var waUrl = 'https://wa.me/' + waClean + '?text=' + encodeURIComponent(STATE.settings.whatsappPrefillText || 'Hi Mumbai Zaika, I want to place a direct order!');
+      var qrApiUrl = 'https://quickchart.io/qr?text=' + encodeURIComponent(waUrl) + '&size=' + (is58mm ? '192' : '240') + '&margin=1&ecLevel=M';
+
+      wrapper.innerHTML =
+        '<div id="thermal-receipt-print" style="width:' + containerWidth + ';max-width:' + containerWidth + ';background:#fff;color:#000;font-family:\'Courier New\',Courier,monospace;font-size:' + baseFontSize + ';line-height:' + lineHeight + ';padding:' + (is58mm ? '4px 2px' : '8px 4px') + ';border:1px solid #ddd;box-shadow:0 1px 2px rgba(0,0,0,0.05);box-sizing:border-box;">' +
+          '<div style="text-align:center;border-bottom:1px dashed #000;padding-bottom:' + (is58mm ? '3px' : '5px') + ';margin-bottom:' + (is58mm ? '3px' : '5px') + ';">' +
+            '<div style="font-size:' + (is58mm ? '12px' : '14px') + ';font-weight:bold;text-transform:uppercase;letter-spacing:0.2px;">' + (STATE.settings.restaurantName || 'Mumbai Zaika') + '</div>' +
+            '<div style="font-size:' + (is58mm ? '8px' : '9.5px') + ';margin-top:1px;">' + (STATE.settings.address || 'Wazirbagh Mohalla, Lucknow') + '</div>' +
+            '<div style="font-size:' + (is58mm ? '8px' : '9.5px') + ';">Ph: ' + (STATE.settings.phone || '+91 98765 43210') + '</div>' +
+            '<div style="font-size:' + (is58mm ? '8px' : '9.5px') + ';font-weight:bold;margin-top:1px;">FSSAI Reg: ' + (STATE.settings.fssaiNo || '30261105128038073') + '</div>' +
+          '</div>' +
+          '<div style="border-bottom:1px dashed #000;padding-bottom:' + (is58mm ? '3px' : '4px') + ';margin-bottom:' + (is58mm ? '3px' : '4px') + ';font-size:' + (is58mm ? '8.5px' : '10px') + ';">' +
+            '<div style="display:flex;justify-content:space-between;font-weight:bold;border:1px solid #000;padding:' + (is58mm ? '1px 2px' : '2px 3px') + ';margin-bottom:' + (is58mm ? '2px' : '3px') + ';"><span>' + STATE.orderMode + '</span><span>' + payMode + '</span></div>' +
+            '<div style="display:flex;justify-content:space-between;"><span>Inv: ' + nextInv + '</span><span>' + new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'}) + '</span></div>' +
+            '<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Cust: ' + custName + (custPhone ? ' (' + custPhone + ')' : '') + '</div>' +
+          '</div>' +
+          '<div style="border-bottom:1px dashed #000;padding-bottom:' + (is58mm ? '3px' : '4px') + ';margin-bottom:' + (is58mm ? '3px' : '4px') + ';">' +
+            '<div style="display:flex;justify-content:space-between;font-weight:bold;border-bottom:1px solid #000;padding-bottom:1px;margin-bottom:2px;font-size:' + (is58mm ? '8.5px' : '10px') + ';">' +
+              '<div style="flex:1;">ITEM</div><div style="width:' + (is58mm ? '18px' : '22px') + ';text-align:center;">QTY</div><div style="width:' + (is58mm ? '32px' : '38px') + ';text-align:right;">RATE</div><div style="width:' + (is58mm ? '36px' : '42px') + ';text-align:right;">AMT</div>' +
+            '</div>' + itemsHtml +
+          '</div>' +
+          '<div style="border-bottom:1px dashed #000;padding-bottom:' + (is58mm ? '4px' : '5px') + ';margin-bottom:' + (is58mm ? '4px' : '5px') + ';font-size:' + (is58mm ? '9px' : '10.5px') + ';">' +
+            '<div style="display:flex;justify-content:space-between;"><span>Subtotal</span><span>₹' + subtotal.toFixed(2) + '</span></div>' +
+            '<div style="display:flex;justify-content:space-between;"><span>Packaging</span><span>+₹' + pack.toFixed(2) + '</span></div>' +
+            '<div style="display:flex;justify-content:space-between;"><span>GST (' + (STATE.settings.gstRatePercent || 5) + '%)</span><span>+₹' + tax.toFixed(2) + '</span></div>' +
+            (disc > 0 ? '<div style="display:flex;justify-content:space-between;font-weight:bold;"><span>Discount</span><span>-₹' + disc.toFixed(2) + '</span></div>' : '') +
+            '<div style="display:flex;justify-content:space-between;font-size:' + (is58mm ? '11px' : '13px') + ';font-weight:bold;border-top:1px solid #000;padding-top:2px;margin-top:2px;"><span>GRAND TOTAL</span><span>₹' + grand.toFixed(2) + '</span></div>' +
+          '</div>' +
+          '<div style="text-align:center;padding-top:1px;">' +
+            '<div style="font-size:' + (is58mm ? '8px' : '9px') + ';font-weight:bold;text-transform:uppercase;margin-bottom:2px;letter-spacing:0.2px;">★ SCAN TO RE-ORDER DIRECT ★</div>' +
+            '<div style="display:flex;justify-content:center;margin:' + (is58mm ? '2px 0' : '4px 0') + ';"><img src="' + qrApiUrl + '" width="' + qrPixelSize + '" height="' + qrPixelSize + '" alt="WhatsApp QR" style="width:' + qrPixelSize + 'px;height:' + qrPixelSize + 'px;display:block;border:1px solid #000;padding:1px;background:#fff;image-rendering:-webkit-optimize-contrast;image-rendering:pixelated;image-rendering:-moz-crisp-edges;image-rendering:crisp-edges;" /></div>' +
+            '<div style="font-size:' + (is58mm ? '8px' : '9px') + ';font-weight:bold;border:1px solid #000;padding:' + (is58mm ? '2px' : '3px') + ';margin-top:2px;line-height:1.2;">' + (STATE.settings.billFooterCTA || 'Scan to Order Directly on WhatsApp Next Time!') + '</div>' +
+          '</div>' +
+        '</div>';
+    }
+    window.renderThermalReceipt = renderThermalReceipt;
+
+    // Dedicated Isolated Iframe Print Engine strictly formatted for 58mm (2-inch / 48mm printable) and 80mm
+    function printReceipt() {
+      var receiptEl = document.getElementById('thermal-receipt-print');
+      if (!receiptEl) {
+        showToast('Cart is empty. Add items to print bill.', true);
+        return;
+      }
+      var receiptHtml = receiptEl.outerHTML;
+
+      var printFrame = document.getElementById('hidden-print-frame');
+      if (!printFrame) {
+        printFrame = document.createElement('iframe');
+        printFrame.id = 'hidden-print-frame';
+        printFrame.style.position = 'fixed';
+        printFrame.style.right = '0';
+        printFrame.style.bottom = '0';
+        printFrame.style.width = '0';
+        printFrame.style.height = '0';
+        printFrame.style.border = '0';
+        document.body.appendChild(printFrame);
+      }
+
+      var rollSize = STATE.billPaperSize || '58mm';
+      var is58mm = (rollSize === '58mm');
+      var printableWidth = is58mm ? '48mm' : '72mm';
+      var fontSize = is58mm ? '9px' : '11px';
+      var lineHeight = is58mm ? '1.18' : '1.35';
+
+      var doc = printFrame.contentWindow.document;
+      doc.open();
+      doc.write('<!DOCTYPE html><html><head><title>' + (is58mm ? '58mm (2-Inch)' : '80mm (3-Inch)') + ' POS Receipt</title>');
+      doc.write('<style>');
+      doc.write('@page { size: ' + rollSize + ' auto; margin: 0; }');
+      doc.write('@media print {');
+      doc.write('  html, body { width: ' + printableWidth + ' !important; max-width: ' + printableWidth + ' !important; margin: 0 auto !important; padding: 0 !important; background: #fff !important; color: #000 !important; font-family: \'Courier New\', Courier, monospace !important; font-size: ' + fontSize + ' !important; line-height: ' + lineHeight + ' !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }');
+      doc.write('  * { box-sizing: border-box !important; margin-left: 0; margin-right: 0; }');
+      doc.write('  img { image-rendering: -webkit-optimize-contrast !important; image-rendering: pixelated !important; image-rendering: crisp-edges !important; display: block !important; margin: 0 auto !important; }');
+      doc.write('}');
+      doc.write('html, body { width: ' + printableWidth + '; max-width: ' + printableWidth + '; margin: 0 auto; padding: 1mm 0; background: #fff; color: #000; font-family: \'Courier New\', Courier, monospace; font-size: ' + fontSize + '; line-height: ' + lineHeight + '; -webkit-print-color-adjust: exact; print-color-adjust: exact; }');
+      doc.write('* { box-sizing: border-box; }');
+      doc.write('img { max-width: 100%; height: auto; display: block; margin: 0 auto; image-rendering: pixelated; image-rendering: crisp-edges; }');
+      doc.write('</style></head><body>');
+      doc.write(receiptHtml);
+      doc.write('</body></html>');
+      doc.close();
+
+      setTimeout(function() {
+        try {
+          printFrame.contentWindow.focus();
+          printFrame.contentWindow.print();
+        } catch (err) {
+          console.warn('Iframe print error, falling back:', err);
+          window.print();
+        }
+      }, 300);
+    }
+    window.printReceipt = printReceipt;
+
+    function loadSamplePortalText(type) {
+      var input = document.getElementById('smart-paste-input');
+      if (!input) return;
+      if (type === 'swiggy') {
+        input.value =
+          'SWIGGY PARTNER ORDER #SWG-884920144\nCustomer: Rohit Srivastava (+91 98394 55120)\n2 x Lucknowi Galouti Kebab (4 Pcs) @ ₹240 = ₹480\n1 x Wazirbagh Special Mutton Nihari @ ₹320 = ₹320\nPackaging Charge: ₹30\nGST / Taxes: ₹40\nPromo Discount: -₹50\nGrand Total: ₹820';
+      } else {
+        input.value =
+          'ZOMATO ORDER ID: ZMT-55192837\nCustomer: Ayesha Kidwai (9415288310)\n2 x Crispy Chicken Shami Bun Kebab Burger - Rs. 270\n1 x Crispy Chicken Lollipop Pakora (6 Pcs) - Rs. 190\nRestaurant Packaging: Rs. 25\nTaxes (5% GST): Rs. 23\nCoupon Discount: Rs. 40\nTotal Bill: Rs. 468';
+      }
+    }
+    window.loadSamplePortalText = loadSamplePortalText;
+
+    function runSmartPasteParser() {
+      var input = document.getElementById('smart-paste-input');
+      var raw = (input && input.value) ? input.value : '';
+      if (!raw.trim()) return;
+
+      if (/zomato|zmt/i.test(raw)) setOrderMode('Zomato');
+      else if (/swiggy|swg/i.test(raw)) setOrderMode('Swiggy');
+
+      var custMatch = raw.match(/Customer\s*:\s*([^(\n]+)(?:\(([^)]+)\))?/i);
+      if (custMatch) {
+        var nameEl = document.getElementById('cust-name'); if (nameEl) nameEl.value = custMatch[1].trim();
+        if (custMatch[2]) {
+          var phEl = document.getElementById('cust-phone'); if (phEl) phEl.value = custMatch[2].trim();
+        }
+      }
+      var idMatch = raw.match(/(?:ORDER\s*(?:ID|#)?\s*[:#-]?\s*)([A-Z0-9-]{5,})/i);
+      if (idMatch) {
+        var refEl = document.getElementById('cust-ref'); if (refEl) refEl.value = idMatch[1].trim();
+      }
+
+      var lines = raw.split(/\r?\n/);
+      var parsedItems = [];
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        if (/packaging|packing/i.test(line)) {
+          var mPack = line.match(/(\d+(?:\.\d+)?)/);
+          if (mPack) {
+            var packEl = document.getElementById('cart-packaging');
+            if (packEl) packEl.value = Math.round(parseFloat(mPack[1]));
+          }
+          continue;
+        }
+        if (/discount|promo|coupon/i.test(line)) {
+          var mDisc = line.match(/(\d+(?:\.\d+)?)/);
+          if (mDisc) {
+            var discEl = document.getElementById('cart-discount');
+            if (discEl) discEl.value = Math.round(parseFloat(mDisc[1]));
+          }
+          continue;
+        }
+        var itemMatch = line.match(/^(\d+)\s*[xX*]\s+(.+?)(?:\s*[@=-]\s*(?:₹|Rs\.?|INR)?\s*(\d+(?:\.\d+)?))?/i);
+        if (itemMatch) {
+          var qty = parseInt(itemMatch[1], 10);
+          var name = itemMatch[2].replace(/\s*[-@=]\s*$/, '').trim();
+          var priceVal = itemMatch[3] ? parseFloat(itemMatch[3]) : 200;
+          var unitPrice = (line.indexOf('@') !== -1) ? Math.round(priceVal) : Math.round(priceVal / qty);
+          parsedItems.push({ menuItemId: 'PARSED-' + parsedItems.length, name: name, price: unitPrice, qty: qty });
+        }
+      }
+
+      if (parsedItems.length > 0) {
+        STATE.cart = parsedItems;
+        var payEl = document.getElementById('cart-payment');
+        if (payEl) payEl.value = 'Online Portal';
+        recalculateCart();
+        showToast('Extracted ' + parsedItems.length + ' items from portal order!', false);
+      }
+    }
+    window.runSmartPasteParser = runSmartPasteParser;
+
+    function completeAndPrintOrder(shouldPrint) {
+      if (STATE.cart.length === 0) {
+        showToast('Cart is empty! Please add items before saving.', true);
+        return;
+      }
+      var subtotal = 0;
+      for (var i = 0; i < STATE.cart.length; i++) subtotal += (STATE.cart[i].price * STATE.cart[i].qty);
+
+      var packEl = document.getElementById('cart-packaging');
+      var pack = Number(packEl ? packEl.value : (STATE.settings.defaultPackagingCharge || 20)) || 0;
+
+      var discEl = document.getElementById('cart-discount');
+      var disc = Number(discEl ? discEl.value : 0) || 0;
+
+      var gstPercent = STATE.settings.gstRatePercent || 5;
+      var tax = Math.round(subtotal * (gstPercent / 100));
+      var grand = Math.max(0, subtotal + tax + pack - disc);
+
+      var custNameEl = document.getElementById('cust-name');
+      var custPhoneEl = document.getElementById('cust-phone');
+      var custRefEl = document.getElementById('cust-ref');
+      var payEl = document.getElementById('cart-payment');
+
+      var newOrder = {
+        invoiceNo: 'MZ-' + (8401 + STATE.orders.length),
+        timestamp: new Date().toISOString(),
+        orderType: STATE.orderMode,
+        customerName: (custNameEl && custNameEl.value.trim()) ? custNameEl.value.trim() : 'Walk-in Customer',
+        customerPhone: (custPhoneEl && custPhoneEl.value.trim()) ? custPhoneEl.value.trim() : '',
+        customerAddress: (custRefEl && custRefEl.value.trim()) ? custRefEl.value.trim() : '',
+        externalOrderId: (custRefEl && custRefEl.value.trim()) ? custRefEl.value.trim() : '',
+        items: STATE.cart.slice(),
+        subtotal: subtotal,
+        taxAmount: tax,
+        packagingCharge: pack,
+        discountAmount: disc,
+        grandTotal: grand,
+        paymentMode: (payEl && payEl.value) ? payEl.value : 'UPI',
+        cashierName: STATE.currentUser.name
+      };
+
+      STATE.orders.unshift(newOrder);
+
+      if (typeof google !== 'undefined' && google && google.script && google.script.run) {
+        google.script.run.saveOrder(newOrder);
+      }
+
+      showToast('Order ' + newOrder.invoiceNo + ' saved to Sheet Tab 2!', false);
+
+      if (shouldPrint) {
+        printReceipt();
+      }
+
+      STATE.cart = [];
+      if (custNameEl) custNameEl.value = '';
+      if (custPhoneEl) custPhoneEl.value = '';
+      if (custRefEl) custRefEl.value = '';
+      recalculateCart();
+    }
+    window.completeAndPrintOrder = completeAndPrintOrder;
+
+    // -------------------------------------------------------------
+    // Module: Orders History & Day-End Settlement Logic (Google Sheet Tab 2)
+    // -------------------------------------------------------------
+    function isHistoryDateMatch(timestamp) {
+      if (!timestamp) return true;
+      if (STATE.orderHistoryCustomDate) {
+        return timestamp.slice(0, 10) === STATE.orderHistoryCustomDate;
+      }
+      var period = STATE.orderHistoryPeriod || 'all';
+      if (period === 'all') return true;
+
+      var now = new Date();
+      var todayStr = now.toISOString().slice(0, 10);
+      var recDateStr = timestamp.slice(0, 10);
+
+      if (period === 'today') {
+        return recDateStr === todayStr;
+      }
+      if (period === 'yesterday') {
+        var yest = new Date(now.getTime() - 86400000);
+        return recDateStr === yest.toISOString().slice(0, 10);
+      }
+      if (period === 'week') {
+        var weekAgo = new Date(now.getTime() - 7 * 86400000);
+        return new Date(timestamp) >= weekAgo;
+      }
+      if (period === 'month') {
+        var monthAgo = new Date(now.getTime() - 30 * 86400000);
+        return new Date(timestamp) >= monthAgo;
+      }
+      return true;
+    }
+
+    function renderOrderHistory() {
+      var channelFilterEl = document.getElementById('order-channel-filter');
+      var channelFilter = channelFilterEl ? channelFilterEl.value : 'ALL';
+      var searchEl = document.getElementById('order-history-search');
+      var searchQ = searchEl ? searchEl.value.trim().toLowerCase() : '';
+
+      // Sync period select dropdown with STATE.orderHistoryPeriod
+      var periodSelect = document.getElementById('order-period-select');
+      if (periodSelect && !STATE.orderHistoryCustomDate) {
+        periodSelect.value = STATE.orderHistoryPeriod || 'all';
+      }
+
+      // Filter orders by chosen period / date
+      var dateFilteredOrders = STATE.orders.filter(function(o) {
+        return isHistoryDateMatch(o.timestamp);
+      });
+
+      // Filter expenses by chosen period / date
+      var dateFilteredExpenses = STATE.expenses.filter(function(e) {
+        return isHistoryDateMatch(e.timestamp);
+      });
+
+      // Day-End Settlement Metrics
+      var dayGrossSales = 0;
+      var pickupSales = 0, pickupCount = 0;
+      var deliverySales = 0, deliveryCount = 0;
+      var swiggySales = 0, swiggyCount = 0;
+      var zomatoSales = 0, zomatoCount = 0;
+      var cashTotal = 0, upiTotal = 0, portalTotal = 0;
+
+      for (var i = 0; i < dateFilteredOrders.length; i++) {
+        var ord = dateFilteredOrders[i];
+        var amt = Number(ord.grandTotal || 0);
+        dayGrossSales += amt;
+
+        if (ord.orderType === 'Pickup / Takeaway') { pickupSales += amt; pickupCount++; }
+        else if (ord.orderType === 'Direct Delivery') { deliverySales += amt; deliveryCount++; }
+        else if (ord.orderType === 'Swiggy') { swiggySales += amt; swiggyCount++; }
+        else if (ord.orderType === 'Zomato') { zomatoSales += amt; zomatoCount++; }
+
+        var pm = (ord.paymentMode || 'Cash').toUpperCase();
+        if (pm === 'CASH') cashTotal += amt;
+        else if (pm === 'UPI') upiTotal += amt;
+        else portalTotal += amt;
+      }
+
+      var dayExpenses = 0;
+      for (var j = 0; j < dateFilteredExpenses.length; j++) {
+        dayExpenses += Number(dateFilteredExpenses[j].amount || 0);
+      }
+
+      var dayNetProfit = dayGrossSales - dayExpenses;
+
+      var periodLabel = 'All Time';
+      if (STATE.orderHistoryCustomDate) periodLabel = STATE.orderHistoryCustomDate;
+      else if (STATE.orderHistoryPeriod === 'today') periodLabel = "Today's";
+      else if (STATE.orderHistoryPeriod === 'yesterday') periodLabel = "Yesterday's";
+      else if (STATE.orderHistoryPeriod === 'week') periodLabel = "This Week's";
+      else if (STATE.orderHistoryPeriod === 'month') periodLabel = "This Month's";
+
+      var settlementCards = document.getElementById('order-settlement-cards');
+      if (settlementCards) {
+        settlementCards.innerHTML =
+          '<div class="bg-white border border-stone-200 rounded-xl p-3.5 sm:p-4 shadow-xs">' +
+            '<div class="text-[11px] sm:text-xs text-stone-500 font-medium">' + periodLabel + ' Gross Sales</div>' +
+            '<div class="text-lg sm:text-xl font-bold font-mono text-stone-900 mt-1">₹' + dayGrossSales.toLocaleString('en-IN') + '</div>' +
+            '<div class="text-[11px] text-stone-500 mt-1 font-mono">' + dateFilteredOrders.length + ' settled bills</div>' +
+          '</div>' +
+          '<div class="bg-white border border-stone-200 rounded-xl p-3.5 sm:p-4 shadow-xs">' +
+            '<div class="text-[11px] sm:text-xs text-stone-500 font-medium">' + periodLabel + ' Expenses</div>' +
+            '<div class="text-lg sm:text-xl font-bold font-mono text-stone-900 mt-1">₹' + dayExpenses.toLocaleString('en-IN') + '</div>' +
+            '<div class="text-[11px] text-stone-500 mt-1 font-mono">' + dateFilteredExpenses.length + ' expense vouchers</div>' +
+          '</div>' +
+          '<div class="bg-white border border-stone-200 rounded-xl p-3.5 sm:p-4 shadow-xs">' +
+            '<div class="text-[11px] sm:text-xs text-stone-500 font-medium">' + periodLabel + ' Net Profit / Deficit</div>' +
+            '<div class="text-lg sm:text-xl font-bold font-mono mt-1 ' + (dayNetProfit >= 0 ? 'text-emerald-700' : 'text-rose-600') + '">' +
+              (dayNetProfit >= 0 ? '+' : '-') + '₹' + Math.abs(dayNetProfit).toLocaleString('en-IN') +
+            '</div>' +
+            '<div class="text-[11px] text-stone-500 mt-1 font-mono">' + (dayGrossSales > 0 ? ((dayNetProfit / dayGrossSales) * 100).toFixed(1) + '% margin' : '0% margin') + '</div>' +
+          '</div>' +
+          '<div class="bg-white border border-stone-200 rounded-xl p-3.5 sm:p-4 shadow-xs">' +
+            '<div class="text-[11px] sm:text-xs text-stone-500 font-medium">Orders Count</div>' +
+            '<div class="text-lg sm:text-xl font-bold font-mono text-stone-900 mt-1">' + dateFilteredOrders.length + '</div>' +
+            '<div class="text-[11px] text-stone-500 mt-1 font-mono">Direct: ' + (pickupCount + deliveryCount) + ' · Portals: ' + (swiggyCount + zomatoCount) + '</div>' +
+          '</div>';
+      }
+
+      var breakdownRow = document.getElementById('order-breakdown-row');
+      if (breakdownRow) {
+        breakdownRow.innerHTML =
+          '<div class="bg-white border border-stone-200 rounded-xl p-4 space-y-2 shadow-xs">' +
+            '<div class="text-xs font-bold text-stone-900 mb-2 flex items-center justify-between"><span>Channel Revenue Breakdown</span><span class="font-mono text-[10px] text-stone-400">Sheet Tab 2</span></div>' +
+            '<div class="space-y-1.5 text-xs">' +
+              '<div class="flex justify-between items-center"><span class="text-stone-600 flex items-center gap-1.5"><i class="fa-solid fa-bag-shopping text-emerald-600 text-xs"></i>Pickup / Counter (' + pickupCount + ')</span><span class="font-mono font-bold text-stone-900">₹' + pickupSales.toLocaleString('en-IN') + '</span></div>' +
+              '<div class="flex justify-between items-center"><span class="text-stone-600 flex items-center gap-1.5"><i class="fa-solid fa-motorcycle text-sky-600 text-xs"></i>Direct Delivery (' + deliveryCount + ')</span><span class="font-mono font-bold text-stone-900">₹' + deliverySales.toLocaleString('en-IN') + '</span></div>' +
+              '<div class="flex justify-between items-center"><span class="text-stone-600 flex items-center gap-1.5"><i class="fa-solid fa-bolt text-orange-500 text-xs"></i>Swiggy Partner (' + swiggyCount + ')</span><span class="font-mono font-bold text-stone-900">₹' + swiggySales.toLocaleString('en-IN') + '</span></div>' +
+              '<div class="flex justify-between items-center"><span class="text-stone-600 flex items-center gap-1.5"><i class="fa-solid fa-utensils text-rose-500 text-xs"></i>Zomato Partner (' + zomatoCount + ')</span><span class="font-mono font-bold text-stone-900">₹' + zomatoSales.toLocaleString('en-IN') + '</span></div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="bg-white border border-stone-200 rounded-xl p-4 space-y-2 shadow-xs">' +
+            '<div class="text-xs font-bold text-stone-900 mb-2 flex items-center justify-between"><span>Payment Mode Realization</span><span class="font-mono text-[10px] text-stone-400">Cash vs Digital</span></div>' +
+            '<div class="space-y-1.5 text-xs">' +
+              '<div class="flex justify-between items-center"><span class="text-stone-600 flex items-center gap-1.5"><i class="fa-solid fa-money-bill-1 text-emerald-600 text-xs"></i>Cash In Drawer</span><span class="font-mono font-bold text-emerald-700">₹' + cashTotal.toLocaleString('en-IN') + '</span></div>' +
+              '<div class="flex justify-between items-center"><span class="text-stone-600 flex items-center gap-1.5"><i class="fa-solid fa-qrcode text-sky-600 text-xs"></i>UPI / QR Digital</span><span class="font-mono font-bold text-sky-700">₹' + upiTotal.toLocaleString('en-IN') + '</span></div>' +
+              '<div class="flex justify-between items-center"><span class="text-stone-600 flex items-center gap-1.5"><i class="fa-solid fa-globe text-purple-600 text-xs"></i>Portal Settlement</span><span class="font-mono font-bold text-purple-700">₹' + portalTotal.toLocaleString('en-IN') + '</span></div>' +
+            '</div>' +
+          '</div>';
+      }
+
+      // Displayed list with channel & search filters
+      var visibleOrders = dateFilteredOrders.filter(function(o) {
+        if (channelFilter !== 'ALL' && o.orderType !== channelFilter) return false;
+        if (!searchQ) return true;
+        var searchBlob = (o.invoiceNo + ' ' + (o.customerName || '') + ' ' + (o.customerPhone || '') + ' ' + (o.externalOrderId || '') + ' ' + (o.orderType || '')).toLowerCase();
+        if (searchBlob.indexOf(searchQ) !== -1) return true;
+        if (o.items && Array.isArray(o.items)) {
+          for (var k = 0; k < o.items.length; k++) {
+            if ((o.items[k].name || '').toLowerCase().indexOf(searchQ) !== -1) return true;
+          }
+        }
+        return false;
+      });
+
+      var badgeEl = document.getElementById('order-count-badge');
+      if (badgeEl) badgeEl.textContent = visibleOrders.length + ' Orders';
+
+      var listEl = document.getElementById('order-history-cards-list');
+      if (!listEl) return;
+
+      if (visibleOrders.length === 0) {
+        listEl.innerHTML = '<div class="py-12 text-center text-xs text-stone-400 border border-dashed border-stone-200 rounded-xl">No customer orders found for this period.</div>';
+        return;
+      }
+
+      var html = '';
+      for (var oIdx = 0; oIdx < visibleOrders.length; oIdx++) {
+        var ordObj = visibleOrders[oIdx];
+        var channelPill = '';
+        if (ordObj.orderType === 'Swiggy') channelPill = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-900 border border-orange-200">Swiggy</span>';
+        else if (ordObj.orderType === 'Zomato') channelPill = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-900 border border-rose-200">Zomato</span>';
+        else if (ordObj.orderType === 'Direct Delivery') channelPill = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-100 text-sky-900 border border-sky-200">Direct Delivery</span>';
+        else channelPill = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-200">Pickup</span>';
+
+        var formattedTime = '';
+        try {
+          var od = new Date(ordObj.timestamp);
+          formattedTime = od.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) + ', ' + od.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+        } catch(e) { formattedTime = ordObj.timestamp; }
+
+        var itemsSummary = '';
+        if (ordObj.items && Array.isArray(ordObj.items) && ordObj.items.length > 0) {
+          var itemParts = [];
+          for (var it = 0; it < ordObj.items.length; it++) {
+            itemParts.push('<span class="bg-white border border-stone-200 text-stone-800 px-1.5 py-0.5 rounded text-[10.5px] font-medium">' + ordObj.items[it].qty + 'x ' + ordObj.items[it].name + '</span>');
+          }
+          itemsSummary = itemParts.join(' ');
+        } else {
+          itemsSummary = '<span class="text-stone-400 text-[10px] italic">Items summary</span>';
+        }
+
+        html += '<div class="p-4 bg-stone-50/70 hover:bg-stone-50 border border-stone-200 rounded-xl space-y-2.5 transition-all shadow-2xs">' +
+          '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-200/60 pb-2">' +
+            '<div class="flex items-center gap-2 flex-wrap">' +
+              '<span class="font-mono font-bold text-xs text-stone-900 bg-white px-2 py-0.5 border border-stone-200 rounded">' + ordObj.invoiceNo + '</span>' +
+              channelPill +
+              (ordObj.externalOrderId ? '<span class="text-[10px] font-mono text-stone-500">#' + ordObj.externalOrderId + '</span>' : '') +
+              '<span class="text-[10px] text-stone-400 font-mono">' + formattedTime + '</span>' +
+            '</div>' +
+            '<div class="flex items-center gap-2 self-end sm:self-auto">' +
+              '<span class="text-sm sm:text-base font-bold font-mono text-stone-900">₹' + Number(ordObj.grandTotal || 0).toLocaleString('en-IN') + '</span>' +
+              '<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-stone-200 text-stone-700">' + ordObj.paymentMode + '</span>' +
+              '<button type="button" onclick="printSpecificOrder(\'' + ordObj.invoiceNo + '\')" class="px-2.5 py-1 text-xs font-semibold bg-white border border-stone-300 hover:bg-stone-100 rounded-lg text-stone-800 cursor-pointer shadow-2xs flex items-center gap-1">' +
+                '<i class="fa-solid fa-print text-amber-700"></i><span>Reprint</span>' +
+              '</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">' +
+            '<div class="space-y-1">' +
+              '<div class="text-stone-700 font-semibold">' + (ordObj.customerName || 'Walk-in Customer') + (ordObj.customerPhone ? ' · ' + ordObj.customerPhone : '') + '</div>' +
+              (ordObj.customerAddress ? '<div class="text-[11px] text-stone-500">' + ordObj.customerAddress + '</div>' : '') +
+            '</div>' +
+            '<div class="flex flex-wrap gap-1 items-center max-w-xl">' + itemsSummary + '</div>' +
+          '</div>' +
+        '</div>';
+      }
+      listEl.innerHTML = html;
+    }
+    window.renderOrderHistory = renderOrderHistory;
+
+    function printSpecificOrder(invoiceNo) {
+      var target = null;
+      for (var i = 0; i < STATE.orders.length; i++) {
+        if (STATE.orders[i].invoiceNo === invoiceNo) { target = STATE.orders[i]; break; }
+      }
+      if (!target) {
+        showToast('Order not found', true);
+        return;
+      }
+
+      var items = target.items || [];
+      var itemsHtml = '';
+      for (var k = 0; k < items.length; k++) {
+        var it = items[k];
+        itemsHtml += '<div style="display:flex;justify-content:space-between;font-size:10.5px;padding:2px 0;">' +
+          '<div style="flex:1;padding-right:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + it.name + '</div>' +
+          '<div style="width:25px;text-align:center;">' + it.qty + '</div>' +
+          '<div style="width:40px;text-align:right;">₹' + it.price + '</div>' +
+          '<div style="width:45px;text-align:right;font-weight:bold;">₹' + (it.price * it.qty) + '</div></div>';
+      }
+
+      var rollSize = STATE.billPaperSize || '58mm';
+      var is58mm = (rollSize === '58mm');
+      var containerWidth = is58mm ? '48mm' : '72mm';
+      var baseFontSize = is58mm ? '9px' : '11px';
+      var lineHeight = is58mm ? '1.18' : '1.35';
+      var qrPixelSize = is58mm ? '96' : '112';
+
+      var waClean = (STATE.settings.whatsappNumber || '919876543210').replace(/[^0-9]/g, '');
+      var waUrl = 'https://wa.me/' + waClean + '?text=' + encodeURIComponent(STATE.settings.whatsappPrefillText || 'Hi Mumbai Zaika, I want to place a direct order!');
+      var qrApiUrl = 'https://quickchart.io/qr?text=' + encodeURIComponent(waUrl) + '&size=' + (is58mm ? '120' : '140') + '&margin=1';
+
+      var receiptHtml =
+        '<div style="width:' + containerWidth + ';max-width:' + containerWidth + ';background:#fff;color:#000;font-family:\'Courier New\',Courier,monospace;font-size:' + baseFontSize + ';line-height:' + lineHeight + ';padding:' + (is58mm ? '2px 1px' : '4px 3px') + ';border:1px solid #ddd;">' +
+          '<div style="text-align:center;border-bottom:1px dashed #000;padding-bottom:3px;margin-bottom:3px;">' +
+            '<div style="font-size:' + (is58mm ? '12px' : '14px') + ';font-weight:bold;text-transform:uppercase;letter-spacing:0.2px;">' + (STATE.settings.restaurantName || 'Mumbai Zaika') + '</div>' +
+            '<div style="font-size:' + (is58mm ? '8px' : '9px') + ';margin-top:1px;">' + (STATE.settings.address || 'Wazirbagh Mohalla, Lucknow') + '</div>' +
+            '<div style="font-size:' + (is58mm ? '8px' : '9px') + ';">Ph: ' + (STATE.settings.phone || '+91 98765 43210') + '</div>' +
+            '<div style="font-size:' + (is58mm ? '8px' : '9px') + ';font-weight:bold;margin-top:1px;">FSSAI Reg: ' + (STATE.settings.fssaiNo || '30261105128038073') + '</div>' +
+          '</div>' +
+          '<div style="border-bottom:1px dashed #000;padding-bottom:3px;margin-bottom:3px;font-size:' + (is58mm ? '8.5px' : '10px') + ';">' +
+            '<div style="display:flex;justify-content:space-between;font-weight:bold;border:1px solid #000;padding:1px 2px;margin-bottom:2px;"><span>' + target.orderType + '</span><span>' + target.paymentMode + '</span></div>' +
+            '<div style="display:flex;justify-content:space-between;"><span>Inv: ' + target.invoiceNo + '</span><span>' + (target.timestamp ? target.timestamp.slice(0, 16).replace('T', ' ') : '') + '</span></div>' +
+            '<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Cust: ' + (target.customerName || 'Walk-in') + (target.customerPhone ? ' (' + target.customerPhone + ')' : '') + '</div>' +
+          '</div>' +
+          '<div style="border-bottom:1px dashed #000;padding-bottom:3px;margin-bottom:3px;">' +
+            '<div style="display:flex;justify-content:space-between;font-weight:bold;border-bottom:1px solid #000;padding-bottom:1px;margin-bottom:2px;font-size:' + (is58mm ? '8.5px' : '9.5px') + ';">' +
+              '<div style="flex:1;">ITEM</div><div style="width:' + (is58mm ? '18px' : '22px') + ';text-align:center;">QTY</div><div style="width:' + (is58mm ? '32px' : '38px') + ';text-align:right;">RATE</div><div style="width:' + (is58mm ? '36px' : '42px') + ';text-align:right;">AMT</div>' +
+            '</div>' + itemsHtml +
+          '</div>' +
+          '<div style="border-bottom:1px dashed #000;padding-bottom:3px;margin-bottom:3px;font-size:' + (is58mm ? '9px' : '10.5px') + ';">' +
+            '<div style="display:flex;justify-content:space-between;"><span>Subtotal</span><span>₹' + Number(target.subtotal || 0).toFixed(2) + '</span></div>' +
+            '<div style="display:flex;justify-content:space-between;"><span>Packaging</span><span>+₹' + Number(target.packagingCharge || 0).toFixed(2) + '</span></div>' +
+            '<div style="display:flex;justify-content:space-between;"><span>GST / Taxes</span><span>+₹' + Number(target.taxAmount || 0).toFixed(2) + '</span></div>' +
+            (Number(target.discountAmount) > 0 ? '<div style="display:flex;justify-content:space-between;font-weight:bold;"><span>Discount</span><span>-₹' + Number(target.discountAmount).toFixed(2) + '</span></div>' : '') +
+            '<div style="display:flex;justify-content:space-between;font-size:' + (is58mm ? '11px' : '13px') + ';font-weight:bold;border-top:1px solid #000;padding-top:2px;margin-top:2px;"><span>GRAND TOTAL</span><span>₹' + Number(target.grandTotal || 0).toFixed(2) + '</span></div>' +
+          '</div>' +
+          '<div style="text-align:center;padding-top:1px;">' +
+            '<div style="font-size:' + (is58mm ? '8px' : '9px') + ';font-weight:bold;text-transform:uppercase;margin-bottom:2px;letter-spacing:0.2px;">★ SCAN TO RE-ORDER DIRECT ★</div>' +
+            '<div style="display:flex;justify-content:center;margin:' + (is58mm ? '2px 0' : '4px 0') + ';"><img src="' + qrApiUrl + '" width="' + qrPixelSize + '" height="' + qrPixelSize + '" alt="WhatsApp QR" style="width:' + qrPixelSize + 'px;height:' + qrPixelSize + 'px;display:block;border:1px solid #000;padding:1px;background:#fff;image-rendering:-webkit-optimize-contrast;image-rendering:pixelated;image-rendering:-moz-crisp-edges;image-rendering:crisp-edges;" /></div>' +
+            '<div style="font-size:' + (is58mm ? '8px' : '9px') + ';font-weight:bold;border:1px solid #000;padding:' + (is58mm ? '2px' : '3px') + ';margin-top:2px;line-height:1.2;">' + (STATE.settings.billFooterCTA || 'Scan to Order Directly on WhatsApp Next Time!') + '</div>' +
+          '</div>' +
+        '</div>';
+
+      var printFrame = document.getElementById('hidden-print-frame');
+      if (!printFrame) {
+        printFrame = document.createElement('iframe');
+        printFrame.id = 'hidden-print-frame';
+        printFrame.style.position = 'fixed';
+        printFrame.style.right = '0';
+        printFrame.style.bottom = '0';
+        printFrame.style.width = '0';
+        printFrame.style.height = '0';
+        printFrame.style.border = '0';
+        document.body.appendChild(printFrame);
+      }
+
+      var doc = printFrame.contentWindow.document;
+      doc.open();
+      doc.write('<!DOCTYPE html><html><head><title>' + (is58mm ? '58mm (2-Inch)' : '80mm (3-Inch)') + ' POS Receipt - ' + target.invoiceNo + '</title>');
+      doc.write('<style>');
+      doc.write('@page { size: ' + rollSize + ' auto; margin: 0; }');
+      doc.write('@media print {');
+      doc.write('  html, body { width: ' + containerWidth + ' !important; max-width: ' + containerWidth + ' !important; margin: 0 auto !important; padding: 0 !important; background: #fff !important; color: #000 !important; font-family: \'Courier New\', Courier, monospace !important; font-size: ' + baseFontSize + ' !important; line-height: ' + lineHeight + ' !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }');
+      doc.write('  * { box-sizing: border-box !important; margin-left: 0; margin-right: 0; }');
+      doc.write('  img { image-rendering: -webkit-optimize-contrast !important; image-rendering: pixelated !important; image-rendering: crisp-edges !important; display: block !important; margin: 0 auto !important; }');
+      doc.write('}');
+      doc.write('html, body { width: ' + containerWidth + '; max-width: ' + containerWidth + '; margin: 0 auto; padding: 1mm 0; background: #fff; color: #000; font-family: \'Courier New\', Courier, monospace; font-size: ' + baseFontSize + '; line-height: ' + lineHeight + '; -webkit-print-color-adjust: exact; print-color-adjust: exact; }');
+      doc.write('* { box-sizing: border-box; }');
+      doc.write('img { max-width: 100%; height: auto; display: block; margin: 0 auto; image-rendering: pixelated; image-rendering: crisp-edges; }');
+      doc.write('</style></head><body>');
+      doc.write(receiptHtml);
+      doc.write('</body></html>');
+      doc.close();
+
+      setTimeout(function() {
+        try {
+          printFrame.contentWindow.focus();
+          printFrame.contentWindow.print();
+        } catch(e) {
+          console.warn('Iframe print error:', e);
+        }
+      }, 300);
+    }
+    window.printSpecificOrder = printSpecificOrder;
+
+    // -------------------------------------------------------------
+    // Module 3: CCTV Logic
+    // -------------------------------------------------------------
+    function renderCctv() {
+      var grid = document.getElementById('cctv-grid');
+      if (!grid) return;
+      var html = '';
+      for (var i = 0; i < STATE.cameras.length; i++) {
+        var c = STATE.cameras[i];
+        html += '<div class="bg-white border border-stone-200 rounded-xl overflow-hidden shadow-xs">' +
+          '<div class="px-4 py-2.5 bg-stone-50 border-b border-stone-200 flex justify-between items-center text-xs">' +
+            '<span class="font-bold text-stone-900"><i class="fa-solid fa-video mr-1.5 text-stone-600"></i>' + c.id + ' · ' + c.name + '</span>' +
+            '<span class="font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-semibold"><i class="fa-solid fa-circle text-[8px] mr-1"></i>Online · 1080p</span>' +
+          '</div>' +
+          '<div class="aspect-video bg-stone-900 text-stone-300 flex flex-col items-center justify-center p-4 font-mono text-xs relative select-none">' +
+            '<div class="absolute top-3 left-3 px-2 py-0.5 bg-red-600 text-white rounded text-[10px] font-bold tracking-wider uppercase animate-pulse">REC</div>' +
+            '<i class="fa-solid fa-camera-retro text-3xl text-amber-500 mb-2"></i>' +
+            '<div class="font-bold text-white tracking-wide">MUMBAI ZAIKA LIVE STREAM</div>' +
+            '<div class="text-stone-400 text-[11px]">' + c.zone + '</div>' +
+            '<div class="text-[10px] text-stone-500 mt-2 font-mono">' + new Date().toLocaleString('en-IN') + '</div>' +
+          '</div></div>';
+      }
+      grid.innerHTML = html;
+    }
+    window.renderCctv = renderCctv;
+
+    // -------------------------------------------------------------
+    // Module 4: Admin & Users Logic (Contact Info & Staff CRUD)
+    // -------------------------------------------------------------
+    function renderAdmin() {
+      var elName = document.getElementById('set-name'); if (elName) elName.value = STATE.settings.restaurantName || '';
+      var elTag = document.getElementById('set-tagline'); if (elTag) elTag.value = STATE.settings.tagline || '';
+      var elAddr = document.getElementById('set-address'); if (elAddr) elAddr.value = STATE.settings.address || '';
+      var elPhone = document.getElementById('set-phone'); if (elPhone) elPhone.value = STATE.settings.phone || '';
+      var elFssai = document.getElementById('set-fssai'); if (elFssai) elFssai.value = STATE.settings.fssaiNo || '';
+      var elAdminName = document.getElementById('set-admin-name'); if (elAdminName) elAdminName.value = STATE.settings.adminName || '';
+      var elAdminPin = document.getElementById('set-admin-pin'); if (elAdminPin) elAdminPin.value = STATE.settings.adminPin || '1234';
+
+      renderUsersList();
+    }
+    window.renderAdmin = renderAdmin;
+
+    function renderUsersList() {
+      var userList = document.getElementById('users-admin-list');
+      if (!userList) return;
+      var html = '';
+      for (var i = 0; i < STATE.users.length; i++) {
+        var u = STATE.users[i];
+        var isSelf = (STATE.currentUser.id === u.id);
+        html += '<div class="p-3.5 border border-stone-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-stone-50/60 shadow-2xs">' +
+          '<div class="flex items-center gap-3">' +
+            '<div class="w-9 h-9 rounded-full bg-stone-900 text-amber-400 flex items-center justify-center font-bold text-xs shrink-0">' +
+              u.name.charAt(0) +
+            '</div>' +
+            '<div>' +
+              '<div class="font-bold text-stone-900 text-xs flex items-center gap-1.5">' +
+                u.name + (isSelf ? ' <span class="text-[10px] text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded font-semibold">Active</span>' : '') +
+              '</div>' +
+              '<div class="text-stone-500 text-[11px] font-mono mt-0.5">' +
+                u.role + ' · PIN: ••••' + (STATE.currentUser.permissions.admin ? ' (' + u.pin + ')' : '') +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="flex items-center gap-2 self-end sm:self-auto">' +
+            '<span class="text-[11px] font-semibold px-2 py-0.5 rounded ' + (u.permissions.admin ? 'bg-amber-100 text-amber-900' : 'bg-stone-200 text-stone-700') + '">' +
+              (u.permissions.admin ? 'Full Admin' : 'POS & Expense') +
+            '</span>' +
+            '<button type="button" onclick="openUserModal(\'' + u.id + '\')" class="p-1.5 text-stone-600 hover:text-stone-900 bg-white border border-stone-200 rounded-lg cursor-pointer" title="Edit Staff User">' +
+              '<i class="fa-solid fa-pencil text-xs"></i>' +
+            '</button>' +
+            (!isSelf
+              ? '<button type="button" onclick="confirmDeleteUser(\'' + u.id + '\')" class="p-1.5 text-red-500 hover:text-red-700 bg-white border border-stone-200 rounded-lg cursor-pointer" title="Delete User"><i class="fa-solid fa-trash-can text-xs"></i></button>'
+              : '') +
+          '</div>' +
+        '</div>';
+      }
+      userList.innerHTML = html;
+    }
+
+    function handleSaveAdminProfile(ev) {
+      if (ev && ev.preventDefault) ev.preventDefault();
+      var elName = document.getElementById('set-name');
+      var elTag = document.getElementById('set-tagline');
+      var elAddr = document.getElementById('set-address');
+      var elPhone = document.getElementById('set-phone');
+      var elFssai = document.getElementById('set-fssai');
+      var elAdminName = document.getElementById('set-admin-name');
+      var elAdminPin = document.getElementById('set-admin-pin');
+
+      if (elName && elName.value) STATE.settings.restaurantName = elName.value.trim();
+      if (elTag && elTag.value) STATE.settings.tagline = elTag.value.trim();
+      if (elAddr && elAddr.value) STATE.settings.address = elAddr.value.trim();
+      if (elPhone && elPhone.value) STATE.settings.phone = elPhone.value.trim();
+      if (elFssai && elFssai.value) STATE.settings.fssaiNo = elFssai.value.trim();
+      if (elAdminName && elAdminName.value) STATE.settings.adminName = elAdminName.value.trim();
+      if (elAdminPin && elAdminPin.value) {
+        STATE.settings.adminPin = elAdminPin.value.trim();
+        for (var i = 0; i < STATE.users.length; i++) {
+          if (STATE.users[i].role === 'Admin') STATE.users[i].pin = elAdminPin.value.trim();
+        }
+      }
+
+      if (typeof google !== 'undefined' && google && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function() {
+            showToast('Contact info saved to Google Sheet Tab 4!', false);
+          })
+          .updateAdminProfile(STATE.settings);
+      } else {
+        showToast('Contact info saved to Google Sheet Tab 4!', false);
+      }
+      recalculateCart();
+      return false;
+    }
+    window.handleSaveAdminProfile = handleSaveAdminProfile;
+
+    function handleUserRoleSelectChange() {
+      var roleSel = document.getElementById('user-edit-role');
+      var customIn = document.getElementById('user-edit-custom-role');
+      if (roleSel && customIn) {
+        if (roleSel.value === 'CUSTOM') {
+          customIn.classList.remove('hidden');
+          customIn.focus();
+        } else {
+          customIn.classList.add('hidden');
+        }
+      }
+    }
+    window.handleUserRoleSelectChange = handleUserRoleSelectChange;
+
+    // Staff User CRUD: Add / Edit
+    function openUserModal(userId) {
+      var modal = document.getElementById('user-modal');
+      var title = document.getElementById('user-modal-title');
+      var editId = document.getElementById('user-edit-id');
+      var nameIn = document.getElementById('user-edit-name');
+      var roleIn = document.getElementById('user-edit-role');
+      var customRoleIn = document.getElementById('user-edit-custom-role');
+      var pinIn = document.getElementById('user-edit-pin');
+      var pPos = document.getElementById('perm-pos');
+      var pExp = document.getElementById('perm-expenses');
+      var pOrd = document.getElementById('perm-orders');
+      var pCam = document.getElementById('perm-cctv');
+      var pPnl = document.getElementById('perm-pnl');
+      var pAdm = document.getElementById('perm-admin');
+      var pSet = document.getElementById('perm-settings');
+
+      if (userId) {
+        var user = null;
+        for (var i = 0; i < STATE.users.length; i++) {
+          if (STATE.users[i].id === userId) { user = STATE.users[i]; break; }
+        }
+        if (!user) return;
+        if (title) title.textContent = 'Edit Staff Member: ' + user.name;
+        if (editId) editId.value = user.id;
+        if (nameIn) nameIn.value = user.name;
+
+        var standardRoles = ['Admin', 'Cashier', 'Kitchen Staff'];
+        if (standardRoles.indexOf(user.role) !== -1) {
+          if (roleIn) roleIn.value = user.role;
+          if (customRoleIn) {
+            customRoleIn.value = '';
+            customRoleIn.classList.add('hidden');
+          }
+        } else {
+          if (roleIn) roleIn.value = 'CUSTOM';
+          if (customRoleIn) {
+            customRoleIn.value = user.role;
+            customRoleIn.classList.remove('hidden');
+          }
+        }
+
+        if (pinIn) pinIn.value = user.pin;
+        if (pPos) pPos.checked = Boolean(user.permissions && user.permissions.pos !== false);
+        if (pExp) pExp.checked = Boolean(user.permissions && user.permissions.expenses !== false);
+        if (pOrd) pOrd.checked = Boolean(user.permissions && user.permissions.orders !== false);
+        if (pCam) pCam.checked = Boolean(user.permissions && user.permissions.cctv !== false);
+        if (pPnl) pPnl.checked = Boolean(user.permissions && user.permissions.pnl);
+        if (pAdm) pAdm.checked = Boolean(user.permissions && user.permissions.admin);
+        if (pSet) pSet.checked = Boolean(user.permissions && user.permissions.settings);
+      } else {
+        if (title) title.textContent = 'Add New Staff Member';
+        if (editId) editId.value = '';
+        if (nameIn) nameIn.value = '';
+        if (roleIn) roleIn.value = 'Cashier';
+        if (customRoleIn) {
+          customRoleIn.value = '';
+          customRoleIn.classList.add('hidden');
+        }
+        if (pinIn) pinIn.value = Math.floor(1000 + Math.random() * 9000);
+        if (pPos) pPos.checked = true;
+        if (pExp) pExp.checked = true;
+        if (pOrd) pOrd.checked = true;
+        if (pCam) pCam.checked = true;
+        if (pPnl) pPnl.checked = false;
+        if (pAdm) pAdm.checked = false;
+        if (pSet) pSet.checked = false;
+      }
+
+      if (modal) modal.style.display = 'flex';
+      if (nameIn) setTimeout(function() { nameIn.focus(); }, 100);
+    }
+    window.openUserModal = openUserModal;
+
+    function handleSaveUser() {
+      var editId = document.getElementById('user-edit-id');
+      var nameIn = document.getElementById('user-edit-name');
+      var roleIn = document.getElementById('user-edit-role');
+      var customRoleIn = document.getElementById('user-edit-custom-role');
+      var pinIn = document.getElementById('user-edit-pin');
+      var pPos = document.getElementById('perm-pos');
+      var pExp = document.getElementById('perm-expenses');
+      var pOrd = document.getElementById('perm-orders');
+      var pCam = document.getElementById('perm-cctv');
+      var pPnl = document.getElementById('perm-pnl');
+      var pAdm = document.getElementById('perm-admin');
+      var pSet = document.getElementById('perm-settings');
+
+      var name = nameIn ? nameIn.value.trim() : '';
+      var pin = pinIn ? pinIn.value.trim() : '';
+      var role = roleIn ? roleIn.value : 'Cashier';
+      if (role === 'CUSTOM') {
+        var customVal = customRoleIn ? customRoleIn.value.trim() : '';
+        role = customVal || 'Custom Staff';
+      }
+
+      if (!name) { showToast('Please enter full name', true); return; }
+      if (!pin || pin.length < 4) { showToast('PIN must be at least 4 digits', true); return; }
+
+      var id = editId && editId.value ? editId.value : ('USR-' + Math.floor(10 + Math.random() * 90));
+      var permissions = {
+        pos: pPos ? pPos.checked : true,
+        expenses: pExp ? pExp.checked : true,
+        orders: pOrd ? pOrd.checked : true,
+        cctv: pCam ? pCam.checked : true,
+        pnl: pPnl ? pPnl.checked : false,
+        admin: pAdm ? pAdm.checked : false,
+        settings: pSet ? pSet.checked : false
+      };
+
+      var existingIdx = -1;
+      for (var i = 0; i < STATE.users.length; i++) {
+        if (STATE.users[i].id === id) { existingIdx = i; break; }
+      }
+
+      var userObj = { id: id, name: name, role: role, pin: pin, permissions: permissions, active: true };
+
+      if (existingIdx !== -1) {
+        STATE.users[existingIdx] = userObj;
+      } else {
+        STATE.users.push(userObj);
+      }
+
+      if (STATE.currentUser && STATE.currentUser.id === id) {
+        STATE.currentUser = userObj;
+        try { localStorage.setItem('mz_active_user', JSON.stringify(userObj)); } catch(e) {}
+      }
+
+      renderUsersList();
+      applyNavigationPermissions();
+      updateCurrentUserUI();
+      closeAllModals();
+      showToast('Staff user ' + name + ' saved to Sheet Tab 4!', false);
+
+      if (typeof google !== 'undefined' && google && google.script && google.script.run) {
+        google.script.run.saveUsersList(STATE.users);
+      }
+    }
+    window.handleSaveUser = handleSaveUser;
+
+    function confirmDeleteUser(userId) {
+      if (!STATE.currentUser.permissions.admin) {
+        showToast('Only Admin can delete staff accounts.', true);
+        return;
+      }
+      var targetUser = null;
+      for (var i = 0; i < STATE.users.length; i++) {
+        if (STATE.users[i].id === userId) { targetUser = STATE.users[i]; break; }
+      }
+      var modal = document.getElementById('delete-modal');
+      var msg = document.getElementById('delete-modal-msg');
+      var confirmBtn = document.getElementById('confirm-delete-btn');
+      if (msg) msg.textContent = 'Permanently delete staff account for ' + (targetUser ? targetUser.name + ' (' + targetUser.role + ')' : userId) + '?';
+      if (confirmBtn) {
+        confirmBtn.onclick = function() {
+          performDeleteUser(userId);
+        };
+      }
+      if (modal) modal.style.display = 'flex';
+    }
+    window.confirmDeleteUser = confirmDeleteUser;
+
+    function performDeleteUser(userId) {
+      STATE.users = STATE.users.filter(function(u) { return u.id !== userId; });
+      renderUsersList();
+      closeAllModals();
+      showToast('User account deleted from Sheet Tab 4', false);
+      if (typeof google !== 'undefined' && google && google.script && google.script.run) {
+        google.script.run.saveUsersList(STATE.users);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Module 5: Dedicated Settings Logic (Google Sheet Tab 5)
+    // -------------------------------------------------------------
+    function renderSettings() {
+      var elCta = document.getElementById('set-cta'); if (elCta) elCta.value = STATE.settings.billFooterCTA || '';
+      var elWa = document.getElementById('set-wa'); if (elWa) elWa.value = STATE.settings.whatsappNumber || '';
+      var elWaMsg = document.getElementById('set-wa-msg'); if (elWaMsg) elWaMsg.value = STATE.settings.whatsappPrefillText || '';
+      var elDisc = document.getElementById('set-discount'); if (elDisc) elDisc.value = STATE.settings.directDiscountPercent || 15;
+      var elPack = document.getElementById('set-pack-fee'); if (elPack) elPack.value = STATE.settings.defaultPackagingCharge || 20;
+      var elGst = document.getElementById('set-gst-rate'); if (elGst) elGst.value = STATE.settings.gstRatePercent || 5;
+    }
+    window.renderSettings = renderSettings;
+
+    function handleSaveDedicatedSettings(ev) {
+      if (ev && ev.preventDefault) ev.preventDefault();
+      var elCta = document.getElementById('set-cta');
+      var elWa = document.getElementById('set-wa');
+      var elWaMsg = document.getElementById('set-wa-msg');
+      var elDisc = document.getElementById('set-discount');
+      var elPack = document.getElementById('set-pack-fee');
+      var elGst = document.getElementById('set-gst-rate');
+
+      if (elCta && elCta.value) STATE.settings.billFooterCTA = elCta.value.trim();
+      if (elWa && elWa.value) STATE.settings.whatsappNumber = elWa.value.trim();
+      if (elWaMsg && elWaMsg.value) STATE.settings.whatsappPrefillText = elWaMsg.value.trim();
+      if (elDisc && elDisc.value) STATE.settings.directDiscountPercent = Number(elDisc.value);
+      if (elPack && elPack.value) STATE.settings.defaultPackagingCharge = Number(elPack.value);
+      if (elGst && elGst.value) STATE.settings.gstRatePercent = Number(elGst.value);
+
+      if (typeof google !== 'undefined' && google && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function() {
+            showToast('Settings saved to Google Sheet Tab 5!', false);
+          })
+          .updateSettings(STATE.settings);
+      } else {
+        showToast('Settings saved to Google Sheet Tab 5!', false);
+      }
+      recalculateCart();
+      return false;
+    }
+    window.handleSaveDedicatedSettings = handleSaveDedicatedSettings;
+
+    // -------------------------------------------------------------
+    // Terminal PIN Unlock Modal (Clean - No default credentials text)
+    // -------------------------------------------------------------
+    function openPinModal() {
+      var modal = document.getElementById('pin-modal');
+      if (modal) {
+        modal.style.display = 'flex';
+        var input = document.getElementById('pin-input');
+        if (input) {
+          input.value = '';
+          setTimeout(function() { input.focus(); }, 100);
+        }
+      }
+    }
+    window.openPinModal = openPinModal;
+
+    function verifyPinLogin() {
+      var input = document.getElementById('pin-input');
+      var pin = input ? input.value.trim() : '';
+      performPinLogin(pin);
+    }
+    window.verifyPinLogin = verifyPinLogin;
+
+    // Synchronize current user with latest Sheet Tab 4 data & local storage
+    function syncActiveUserWithSheetData() {
+      try {
+        var saved = localStorage.getItem('mz_active_user');
+        if (saved) {
+          var parsed = JSON.parse(saved);
+          if (parsed && parsed.id && parsed.id !== 'USR-LOCKED' && parsed.active) {
+            for (var u = 0; u < STATE.users.length; u++) {
+              if (STATE.users[u].id === parsed.id && STATE.users[u].active) {
+                STATE.currentUser = STATE.users[u];
+                localStorage.setItem('mz_active_user', JSON.stringify(STATE.currentUser));
+                break;
+              }
+            }
+          }
+        }
+      } catch (err) {}
+
+      var isLocked = (STATE.currentUser.id === 'USR-LOCKED' || !STATE.currentUser.active);
+      var lockScreen = document.getElementById('terminal-locked-screen');
+      if (lockScreen) {
+        lockScreen.classList.toggle('hidden', !isLocked);
+      }
+
+      // If user is Admin, make sure the name and PIN match Tab 4's ADMIN_NAME & ADMIN_PIN
+      if (STATE.currentUser && STATE.currentUser.role === 'Admin') {
+        if (STATE.settings && STATE.settings.adminName) {
+          STATE.currentUser.name = STATE.settings.adminName;
+        }
+        if (STATE.settings && STATE.settings.adminPin) {
+          STATE.currentUser.pin = STATE.settings.adminPin;
+        }
+      }
+
+      applyNavigationPermissions();
+      updateCurrentUserUI();
+    }
+
+    // -------------------------------------------------------------
+    // Master Render & Sync
+    // -------------------------------------------------------------
+    function renderAll() {
+      renderCategories();
+      renderMenuGrid();
+      recalculateCart();
+      renderExpensesAndPnl();
+      renderOrderHistory();
+      renderCctv();
+      renderAdmin();
+      renderSettings();
+      updateBillSizeUI();
+      updateCurrentUserUI();
+    }
+    window.renderAll = renderAll;
+
+    function refreshFromSheet() {
+      if (typeof google !== 'undefined' && google && google.script && google.script.run) {
+        showToast('Fetching latest data from Google Sheet...', false);
+        google.script.run
+          .withSuccessHandler(function(data) {
+            if (data && !data.error) {
+              STATE.expenses = Array.isArray(data.expenses) ? data.expenses : [];
+              STATE.orders = Array.isArray(data.orders) ? data.orders : [];
+              if (Array.isArray(data.menu) && data.menu.length) STATE.menu = data.menu;
+              if (Array.isArray(data.users) && data.users.length) STATE.users = data.users;
+              if (data.settings && data.settings.restaurantName) STATE.settings = data.settings;
+              syncActiveUserWithSheetData();
+              applyNavigationPermissions();
+              renderAll();
+              showToast('Synced with Google Sheet!', false);
+            }
+          })
+          .getDashboardData();
+      } else {
+        syncActiveUserWithSheetData();
+        applyNavigationPermissions();
+        renderAll();
+        showToast('Rendered latest records.', false);
+      }
+    }
+    window.refreshFromSheet = refreshFromSheet;
+
+    // 1. Initial immediate execution: strictly locked terminal on refresh
+    applyNavigationPermissions();
+    updateBillSizeUI();
+    renderAll();
+
+    // 2. DOM Ready hook (failsafe)
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        applyNavigationPermissions();
+        updateBillSizeUI();
+        renderAll();
+      });
+    }
+
+    // 3. Initial Silent Data Sync with Google Apps Script
+    if (typeof google !== 'undefined' && google && google.script && google.script.run) {
+      google.script.run
+        .withSuccessHandler(function(data) {
+          if (data && !data.error) {
+            STATE.expenses = Array.isArray(data.expenses) ? data.expenses : [];
+            STATE.orders = Array.isArray(data.orders) ? data.orders : [];
+            if (Array.isArray(data.menu) && data.menu.length) STATE.menu = data.menu;
+            if (Array.isArray(data.users) && data.users.length) STATE.users = data.users;
+            if (data.settings && data.settings.restaurantName) STATE.settings = data.settings;
+            syncActiveUserWithSheetData();
+            applyNavigationPermissions();
+            renderAll();
+          }
+        })
+        .withFailureHandler(function(err) {
+          console.warn('Initial sync warning:', err);
+        })
+        .getDashboardData();
+    }
+
+    // 4. Background Silent Auto-Sync every 20 seconds (Without annoying toast popups)
+    setInterval(function() {
+      if (typeof google !== 'undefined' && google && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(data) {
+            if (data && !data.error) {
+              if (Array.isArray(data.expenses)) STATE.expenses = data.expenses;
+              if (Array.isArray(data.orders)) STATE.orders = data.orders;
+              if (Array.isArray(data.menu) && data.menu.length) STATE.menu = data.menu;
+              if (Array.isArray(data.users) && data.users.length) STATE.users = data.users;
+              if (data.settings && data.settings.restaurantName) STATE.settings = data.settings;
+              syncActiveUserWithSheetData();
+              renderExpensesAndPnl();
+              renderOrderHistory();
+            }
+          })
+          .withFailureHandler(function() {})
+          .getDashboardData();
+      }
+    }, 20000);
+  </script>
+</body>
+</html>
